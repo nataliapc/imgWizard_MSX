@@ -7,4 +7,8 @@ class Raw : Compressor
     override fun compress(data: ByteArray): ByteArray {
         return data
     }
+
+    override fun uncompress(data: ByteArray): ByteArray {
+        return data
+    }
 }

@@ -1,7 +1,12 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
+import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
+import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
+import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import java.io.DataInputStream
+import java.lang.RuntimeException
 
 
 /*
@@ -14,7 +19,7 @@ import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
         ---data---
         0x0005 ...   RAW VDP Command data (21 bytes length)
  */
-sealed class V9990CmdChunk(
+open class V9990CmdChunk(
     val sx: Int,            // word
     val sy: Int,            // word
     val dx: Int,            // word
@@ -45,7 +50,18 @@ sealed class V9990CmdChunk(
         Search(0b11000000),             // Border color coordinates on X/Y space are detected.
         Point(0b11010000),              // Color code of specified point on X/Y-coordinates is read out.
         Pset(0b11100000),               // Drawing is executed at drawing point on X/Y-coordinates.
-        Advance(0b11110000)             // Drawing point on X/Y-coordinates is shifted.
+        Advance(0b11110000);            // Drawing point on X/Y-coordinates is shifted.
+        companion object {
+            fun valueOf(value: Int): Command = valueOf(value.toShort())
+            fun valueOf(value: Short): Command {
+                values().forEach {
+                    if (it.value == value) {
+                        return it
+                    }
+                }
+                throw RuntimeException("Unknown V9990 command with value $value")
+            }
+        }
     }
 
     // Logical operations: 0 0 0 TP L11 L10 L01 L00
@@ -60,7 +76,46 @@ sealed class V9990CmdChunk(
         TAND(0b00011000),               // if SC=0 then DC=DC else DC=SC & DC
         TOR(0b00011110),                // if SC=0 then DC=DC else DC=SC | DC
         TXOR(0b00010110),               // if SC=0 then DC=DC else DC=SC ^ DC
-        TNOT(0b00010011)                // if SC=0 then DC=DC else DC=!SC
+        TNOT(0b00010011);               // if SC=0 then DC=DC else DC=!SC
+
+        companion object {
+            fun valueOf(value: Int): LogicalOp = valueOf(value.toShort())
+            fun valueOf(value: Short): LogicalOp {
+                values().forEach {
+                    if (it.value == value) {
+                        return it
+                    }
+                }
+                throw RuntimeException("Unknown V9990 logical operator with value $value")
+            }
+        }
+    }
+
+    companion object : ChunkCompanion {
+        override fun createFrom(stream: DataInputStream): Chunk {
+            val id = stream.readUnsignedByte()
+            stream.readUnsignedShortLE()                    // Skip length
+            val auxData = stream.readUnsignedShortLE()
+
+            val obj = V9990CmdChunk(
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedByte().toShort(),    //arg
+                LogicalOp.valueOf(stream.readUnsignedByte()),
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedShortLE(),
+                stream.readUnsignedShortLE(),
+                Command.valueOf(stream.readUnsignedByte())
+            )
+            obj.checkId(id)
+            obj.auxData = auxData
+
+            return obj
+        }
     }
 
     override fun build(): ByteArray {
@@ -82,9 +137,13 @@ sealed class V9990CmdChunk(
         return ensemble(data)
     }
 
+    override fun printInfo() {
+        println("    ID ${getId()}: V9990 Command($sx,$sy, $dx,$dy, $nx,$ny, $arg, ${log.name}, 0x${Integer.toHexString(mask)}, $foreColor,$backColor, ${cmd.name})")
+    }
+
     object Stop : V9990CmdChunk(0,0,0,0,0,0,0, LogicalOp.None,0,0, 0, Command.Stop)
 
-    class SendData() :
+    class RectangleToSend(posX: Int, posY: Int, width: Int, height: Int) :
         V9990CmdChunk(0, 0, posX, posY, width, height, 0, LogicalOp.IMP, 0xffff, 0, 0, Command.LMMC)
 
     class Fill(posX: Int, posY: Int, width: Int, height: Int, color: Int) :

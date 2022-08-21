@@ -1,21 +1,16 @@
 package org.nataliapc.imagewizard.utils
 
+import java.io.DataInputStream
 import java.io.DataOutputStream
-import kotlin.experimental.and
 
 
-fun DataOutputStream.writeShortLE(v: Short)
+fun DataInputStream.readShortLE(): Short
 {
-    writeShortLE(v.toInt())
+    return readUnsignedShortLE().toShort()
 }
 
-fun DataOutputStream.writeShortLE(v: UShort)
+fun DataInputStream.readUnsignedShortLE(): Int
 {
-    writeShortLE(v.toInt())
-}
-
-fun DataOutputStream.writeShortLE(v: Int)
-{
-    writeByte(v and 0xff)
-    writeByte(v shr 8 and 0xff)
+    val aux = readUnsignedShort()
+    return ((aux shr 8) or ((aux and 0xff) shl 8))
 }

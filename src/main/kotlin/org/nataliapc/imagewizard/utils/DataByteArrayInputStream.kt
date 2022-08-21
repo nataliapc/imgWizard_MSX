@@ -1,17 +1,16 @@
 package org.nataliapc.imagewizard.utils
 
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
+import java.io.ByteArrayInputStream
+import java.io.DataInputStream
+import java.io.InputStream
 
 
-open class DataByteArrayInputStream(private val baos: ByteArrayOutputStream = ByteArrayOutputStream()) : DataOutputStream(baos)
+open class DataByteArrayInputStream(private val stream: InputStream) : DataInputStream(stream)
 {
+    constructor(byteArray: ByteArray) : this(ByteArrayInputStream(byteArray))
+
     override fun close() {
         super.close()
-        baos.close()
-    }
-
-    fun toByteArray(): ByteArray {
-        return baos.toByteArray()
+        stream.close()
     }
 }

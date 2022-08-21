@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test
 @ExperimentalUnsignedTypes
 internal class PletterTest
 {
+    val pletter = Pletter()
+
     val rawData1 = "35456456775643ABCABCDEFABCDE21379879032\n".toByteArray()
     val validCompressed1 = ubyteArrayOf(
         0x01u, 0x33u, 0x35u, 0x34u, 0x35u, 0x36u, 0x86u, 0x02u, 0x37u, 0x37u, 0x06u, 0x06u, 0x33u, 0x41u, 0x42u, 0x43u,
@@ -20,7 +22,7 @@ internal class PletterTest
     @Test
     fun id_Ok()
     {
-        val result = Pletter().id
+        val result = pletter.id
 
         assertEquals(2, result)
     }
@@ -28,17 +30,19 @@ internal class PletterTest
     @Test
     fun compress_Ok1()
     {
-        val result = Pletter().compress(rawData1)
+        val result = pletter.compress(rawData1)
 
         assertArrayEquals(validCompressed1, result)
+        assertArrayEquals(rawData1, pletter.uncompress(result))
     }
 
     @Test
     fun compress_Ok2()
     {
-        val result = Pletter().compress(rawData2)
+        val result = pletter.compress(rawData2)
 
         assertArrayEquals(validCompressed2, result)
+        assertArrayEquals(rawData2, pletter.uncompress(result))
     }
 
 }

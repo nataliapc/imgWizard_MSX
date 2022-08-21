@@ -1,4 +1,17 @@
 package org.nataliapc.imagewizard.utils
 
-class DataByteArrayOutputStream {
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
+
+
+open class DataByteArrayOutputStream(private val baos: ByteArrayOutputStream = ByteArrayOutputStream()) : DataOutputStream(baos)
+{
+    override fun close() {
+        super.close()
+        baos.close()
+    }
+
+    fun toByteArray(): ByteArray {
+        return baos.toByteArray()
+    }
 }

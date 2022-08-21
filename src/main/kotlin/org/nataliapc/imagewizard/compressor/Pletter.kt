@@ -248,8 +248,8 @@ class Pletter : Compressor
         for (i in 0 until sourceSize) {
             m[i].cpos[0] = 0
             m[i].clen[0] = 0
-            prev[i] = last[d[i].toInt() or (d[i + 1].toInt() shl 8)]
-            last[d[i].toInt() or (d[i + 1].toInt() shl 8 )] = i
+            prev[i] = last[d[i].toUByte().toInt() or (d[i + 1].toUByte().toInt() shl 8)]
+            last[d[i].toUByte().toInt() or (d[i + 1].toUByte().toInt() shl 8 )] = i
         }
 
         // Counts the bytes repeated from each starting position
@@ -417,5 +417,15 @@ class Pletter : Compressor
         }
         return done()
     }
+
+    // ************************************************************************
+
+    override fun uncompress(data: ByteArray): ByteArray {
+        TODO("Not yet implemented")
+    }
+
+/*
+
+*/
 
 }

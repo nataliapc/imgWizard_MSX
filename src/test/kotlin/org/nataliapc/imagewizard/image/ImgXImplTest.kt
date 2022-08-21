@@ -7,7 +7,12 @@ import org.junit.jupiter.api.Assertions.*
 internal class ImgXImplTest {
 
     @Test
-    fun get() {
+    fun get_Ok() {
+        val image = ImgXImpl()
+
+        val result = image.get(0).getId()
+
+        assertEquals(result, 128)
     }
 
     @Test

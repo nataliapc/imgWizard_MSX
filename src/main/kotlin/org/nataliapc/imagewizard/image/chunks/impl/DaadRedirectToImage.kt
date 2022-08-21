@@ -1,40 +1,48 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
-import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
+import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
+import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import java.io.DataInputStream
+import java.lang.RuntimeException
 
 
 /*
-    Chunk Info format:
+    Chunk DAAD Redirect format:
         Offset Size  Description
         --header--
-        0x0000  1    Chunk type: (128)
-        0x0001  2    Chunk data length (avoiding header)
-        0x0003  2    Empty chunk header (filled with 0x00)
-        --data--
-        0x0005  1    InfoChunk version
-        0x0006  2    Chunk count (without info chunk)
+        0x0000  1    Chunk type: (0:redirect)
+        0x0001  2    Chunk data length (always 0)
+        0x0003  2    New image location to read
  */
-class DaadRedirectLocation : ChunkAbstractImpl(128)
+class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
 {
-    private val infoVersion = 1
-    private var chunkCount = 0
+    companion object : ChunkCompanion {
+        override fun createFrom(stream: DataInputStream): Chunk {
+            val id = stream.readUnsignedByte()
+            stream.readUnsignedShortLE()                    // Skip length
+            val aux = stream.readUnsignedShortLE()
 
-    fun update(image: ImgX): Chunk
-    {
-        chunkCount = image.chunkCount() - 1
-        return this
+            val obj = DaadRedirectToImage(aux.toShort())
+            obj.checkId(id)
+            return obj
+        }
     }
 
     override fun build(): ByteArray
     {
-        val data = LittleEndianByteBuffer.allocate(3)
-            .put(infoVersion.toByte())
-            .putShort(chunkCount.toShort())
+        val header = buildHeader()
+        return LittleEndianByteBuffer.allocate(header.size + 2 + 2)
+            .put(header)
+            .putShort(0)
+            .putShort(location)
             .array()
+    }
 
-        return ensemble(data)
+    override fun printInfo() {
+        println("    ID ${getId()}: DAAD Redirect Image location\n"+
+                "        New location: $location")
     }
 }

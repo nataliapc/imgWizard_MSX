@@ -2,13 +2,42 @@ package org.nataliapc.imagewizard.image
 
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
+import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
+import java.io.File
+import java.lang.RuntimeException
 
-class ImageImpl(withInfoChunk: Boolean): Image
+
+class ImgXImpl(withInfoChunk: Boolean = true): ImgX
 {
-    private val magicHeader = "IMGX"
     private val chunks = mutableListOf<Chunk>()
     private var infoChunk: InfoChunk? = null
+
+    companion object {
+        private const val magicHeader = "IMGX"
+
+        fun from(file: File): ImgX {
+            return from(DataByteArrayInputStream(file.inputStream()))
+        }
+
+        fun from(stream: DataInputStream): ImgX {
+            val imgX = ImgXImpl(false)
+            val header = String(stream.readNBytes(4))
+            if (header != magicHeader) {
+                throw RuntimeException("Bad magic header reading IMX ($header)")
+            }
+            while (stream.available() > 0) {
+                imgX.add(Chunk.Factory.createFromStream(stream))
+            }
+            val chunk = imgX.get(0)
+            if (chunk is InfoChunk) {
+                imgX.infoChunk = chunk
+            }
+            return imgX
+        }
+    }
 
     init {
         if (withInfoChunk) {
@@ -21,25 +50,25 @@ class ImageImpl(withInfoChunk: Boolean): Image
         return chunks[index]
     }
 
-    override fun add(chunk: Chunk): Image {
+    override fun add(chunk: Chunk): ImgX {
         chunks.add(chunk)
         infoChunk?.update(this)
         return this
     }
 
-    override fun addAt(index: Int, chunk: Chunk): Image {
+    override fun addAt(index: Int, chunk: Chunk): ImgX {
         chunks.add(index, chunk)
         infoChunk?.update(this)
         return this
     }
 
-    override fun remove(index: Int): Image {
+    override fun remove(index: Int): ImgX {
         chunks.removeAt(index)
         infoChunk?.update(this)
         return this
     }
 
-    override fun removeLast(): Image {
+    override fun removeLast(): ImgX {
         chunks.removeLast()
         infoChunk?.update(this)
         return this
@@ -61,6 +90,13 @@ class ImageImpl(withInfoChunk: Boolean): Image
         }
 
         return output.toByteArray()
+    }
+
+    override fun printInfo() {
+        chunks.forEachIndexed { index, it ->
+            println("CHUNK #$index:")
+            it.printInfo()
+        }
     }
 
 }

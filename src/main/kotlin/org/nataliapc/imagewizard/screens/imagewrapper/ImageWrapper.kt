@@ -1,25 +1,27 @@
-package org.nataliapc.imagewizard.utils.imagewrapper
+package org.nataliapc.imagewizard.screens.imagewrapper
 
 import org.nataliapc.imagewizard.screens.ColorType
 import org.nataliapc.imagewizard.screens.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
-import org.nataliapc.imagewizard.utils.writeShortLE
+import org.nataliapc.imagewizard.utils.ColorByteArrayOutputStream
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
+import toHex
 import java.awt.image.BufferedImage
 import java.awt.image.IndexColorModel
-import java.io.ByteArrayOutputStream
-import java.io.DataOutputStream
 import java.io.File
 import java.io.InputStream
 import java.lang.Math.*
 import java.lang.RuntimeException
-import java.util.*
 import javax.imageio.ImageIO
 import kotlin.math.pow
 
 
 interface ImageWrapper: ScreenRectangle
 {
+    fun getWidth(): Int
+    fun getHeight(): Int
+
     fun isIndexed(): Boolean
     fun isTrueColor(): Boolean
     fun setOutputFormat(colorType: ColorType, paletteType: PaletteType)
@@ -35,6 +37,9 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         private set
     var paletteType = PaletteType.None
         private set
+
+    override fun getWidth(): Int = image.width
+    override fun getHeight(): Int = image.height
 
     companion object
     {
@@ -65,23 +70,14 @@ class ImageWrapperImpl private constructor(): ImageWrapper
     }
 
     override fun getFinalPalette(): ByteArray {
-        val baos = ByteArrayOutputStream()
-        val out = DataOutputStream(baos)
-        var value: Int
+        val out = DataByteArrayOutputStream()
 
         getOriginalPalette().forEach {
-            value = paletteType.fromRGB24(it)
-            if (paletteType.isByteSized()) {
-                out.writeByte(value)
-            }
-            if (paletteType.isShortSized()) {
-                out.writeShortLE(value)
-            }
+            paletteType.writeFromRGB24(it, out)
         }
         val paletteSize = (2.0.pow(colorType.bpp.toDouble()) * round((paletteType.bpp + 7) / 8.0)).toInt()
-        val palette = baos.toByteArray().copyOf(paletteSize)
+        val palette = out.toByteArray().copyOf(paletteSize)
         out.close()
-        baos.close()
 
         return palette
     }
@@ -97,6 +93,29 @@ class ImageWrapperImpl private constructor(): ImageWrapper
     }
 
     override fun getRectangle(x: Int, y: Int, w: Int, h: Int): ByteArray {
-        TODO("Not yet implemented")
+        if (x < 0 || y < 0 || x+w > image.width || y+h > image.height) {
+            throw RuntimeException("Rectangle ($x,$y,$w,$h) not match image bounds (${image.width}x${image.height})")
+        }
+        val intArray = IntArray(w * h)
+        for (posY in y until y+h) {
+            for (posX in x until x+w) {
+                intArray[posX+posY*w] = image.getRGB(posX, posY)
+            }
+        }
+
+        val out = ColorByteArrayOutputStream(colorType, paletteType)
+        val palette = if (isIndexed()) { getOriginalPalette() } else { null }
+        intArray.forEach {
+            if (palette != null) {
+                out.writeColor(palette.indexOf(it))
+            } else {
+                out.writeColor(it)
+            }
+        }
+        out.writeFlush()
+
+        val result = out.toByteArray()
+        out.close()
+        return result
     }
 }
