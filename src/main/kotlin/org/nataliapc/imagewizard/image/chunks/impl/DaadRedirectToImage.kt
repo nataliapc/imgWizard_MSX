@@ -3,10 +3,11 @@ package org.nataliapc.imagewizard.image.chunks.impl
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
-import java.lang.RuntimeException
 
 
 /*
@@ -34,11 +35,13 @@ class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
     override fun build(): ByteArray
     {
         val header = buildHeader()
-        return LittleEndianByteBuffer.allocate(header.size + 2 + 2)
-            .put(header)
-            .putShort(0)
-            .putShort(location)
-            .array()
+        val out = DataByteArrayOutputStream()
+
+        out.write(header)
+        out.writeShortLE(0)
+        out.writeShortLE(location)
+
+        return out.toByteArray()
     }
 
     override fun printInfo() {

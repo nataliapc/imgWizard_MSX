@@ -1,8 +1,10 @@
 package org.nataliapc.imagewizard.image.chunks
 
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 import java.lang.RuntimeException
 
@@ -44,19 +46,19 @@ abstract class ChunkAbstractImpl(private val id: Int): Chunk
 
     protected fun buildHeader(): ByteArray
     {
-        return LittleEndianByteBuffer.allocate(1)
-            .put(getId().toByte())
-            .array()
+        return byteArrayOf(getId().toByte())
     }
 
     protected fun ensemble(data: ByteArray): ByteArray
     {
         val header = buildHeader()
-        return LittleEndianByteBuffer.allocate(header.size + 2 + 2 + data.size)
-            .put(header)
-            .putShort(data.size.toShort())
-            .putShort(auxData.toShort())
-            .put(data)
-            .array()
+        val out = DataByteArrayOutputStream()
+
+        out.write(header)
+        out.writeShortLE(data.size)
+        out.writeShortLE(auxData)
+        out.write(data)
+
+        return out.toByteArray()
     }
 }

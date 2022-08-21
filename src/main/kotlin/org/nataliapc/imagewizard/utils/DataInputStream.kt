@@ -1,7 +1,6 @@
 package org.nataliapc.imagewizard.utils
 
 import java.io.DataInputStream
-import java.io.DataOutputStream
 
 
 fun DataInputStream.readShortLE(): Short

@@ -20,7 +20,7 @@ import java.lang.RuntimeException
         ---data---
         0x0005 ...   Compressed data (1-2043 bytes length)
  */
-class V9990CmdDataChunk(private val data: ByteArray, private val compressor: Compressor) : ChunkAbstractImpl(33 + compressor.id)
+class V9990CmdDataChunk(data: ByteArray, private val compressor: Compressor) : ChunkAbstractImpl(33 + compressor.id)
 {
     private var compressedData: ByteArray = compressor.compress(data)
 

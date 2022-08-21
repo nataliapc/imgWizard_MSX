@@ -3,7 +3,6 @@ package org.nataliapc.imagewizard.compressor
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
-import toHex
 
 internal class RleTest {
 

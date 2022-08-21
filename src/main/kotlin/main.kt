@@ -1,5 +1,4 @@
 import org.nataliapc.imagewizard.compressor.Compressor
-import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
@@ -145,8 +144,8 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
         do {
             dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
             if (verbose) print("\r\tChunk size: ${end-start} -> ${dataCompressed.size} [${end*100/dataIn.size}%] ")
-            if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= MAX_CHUNK_DATA_SIZE-1) break;
-            if (dataCompressed.size >= MAX_CHUNK_DATA_SIZE-2 && dataCompressed.size <= MAX_CHUNK_DATA_SIZE) break;
+            if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= MAX_CHUNK_DATA_SIZE-1) break
+            if (dataCompressed.size >= MAX_CHUNK_DATA_SIZE-2 && dataCompressed.size <= MAX_CHUNK_DATA_SIZE) break
             aux = end
             if (dataCompressed.size > MAX_CHUNK_DATA_SIZE) {
                 end -= (end-lastEnd).absoluteValue / 2

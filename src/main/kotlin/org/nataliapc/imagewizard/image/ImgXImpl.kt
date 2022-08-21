@@ -3,7 +3,6 @@ package org.nataliapc.imagewizard.image
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.File

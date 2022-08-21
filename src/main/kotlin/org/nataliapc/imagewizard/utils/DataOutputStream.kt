@@ -1,8 +1,11 @@
 package org.nataliapc.imagewizard.utils
 
 import java.io.DataOutputStream
-import kotlin.experimental.and
 
+fun DataOutputStream.writeByte(v: Short)
+{
+    writeByte(v.toInt())
+}
 
 fun DataOutputStream.writeShortLE(v: Short)
 {

@@ -7,7 +7,7 @@ import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import java.lang.RuntimeException
-import kotlin.jvm.Throws
+
 
 internal class V9990CmdDataChunkTest {
 

@@ -3,8 +3,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
-import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
-import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import org.nataliapc.imagewizard.utils.*
 import java.io.DataInputStream
 import java.lang.RuntimeException
 
@@ -119,22 +118,22 @@ open class V9990CmdChunk(
     }
 
     override fun build(): ByteArray {
-        val data = LittleEndianByteBuffer.allocate(21)
-            .putShort(sx.toShort())
-            .putShort(sy.toShort())
-            .putShort(dx.toShort())
-            .putShort(dy.toShort())
-            .putShort(nx.toShort())
-            .putShort(ny.toShort())
-            .put(arg.toByte())
-            .put(log.value.toByte())
-            .putShort(mask.toShort())
-            .putShort(foreColor.toShort())
-            .putShort(backColor.toShort())
-            .put(cmd.value.toByte())
-            .array()
+        val out = DataByteArrayOutputStream()
 
-        return ensemble(data)
+        out.writeShortLE(sx)
+        out.writeShortLE(sy)
+        out.writeShortLE(dx)
+        out.writeShortLE(dy)
+        out.writeShortLE(nx)
+        out.writeShortLE(ny)
+        out.writeByte(arg)
+        out.writeByte(log.value)
+        out.writeShortLE(mask)
+        out.writeShortLE(foreColor)
+        out.writeShortLE(backColor)
+        out.writeByte(cmd.value)
+
+        return ensemble(out.toByteArray())
     }
 
     override fun printInfo() {

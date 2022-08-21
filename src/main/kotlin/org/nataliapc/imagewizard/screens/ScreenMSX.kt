@@ -4,7 +4,6 @@ import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataOutputStream
 import java.io.File
-import java.io.OutputStream
 import java.lang.RuntimeException
 import kotlin.math.ceil
 
@@ -139,9 +138,9 @@ enum class PaletteType(val bpp: Int, val rMask: Int, val gMask: Int, val bMask: 
 
 open class ScreenBitmapImpl(
     val screenMode: ScreenModeType,
-    override val colorType: ColorType,
-    override val paletteType: PaletteType,
-    val chipset: Chipset = Chipset.V9990
+    final override val colorType: ColorType,
+    final override val paletteType: PaletteType,
+    final val chipset: Chipset = Chipset.V9990
 ) : ScreenBitmap {
 
     class SC5 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BP4, PaletteType.GRB333, Chipset.V9938)

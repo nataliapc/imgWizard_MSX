@@ -3,7 +3,6 @@ package org.nataliapc.imagewizard.compressor
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.writeShortLE
-import toHex
 import java.lang.Integer.min
 import java.lang.RuntimeException
 

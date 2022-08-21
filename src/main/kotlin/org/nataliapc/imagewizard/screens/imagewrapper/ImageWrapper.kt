@@ -6,7 +6,6 @@ import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.imagewizard.utils.ColorByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import toHex
 import java.awt.image.BufferedImage
 import java.awt.image.IndexColorModel
 import java.io.File

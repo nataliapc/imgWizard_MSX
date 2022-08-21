@@ -10,7 +10,6 @@ import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 import java.lang.RuntimeException
-import java.nio.ByteBuffer
 
 
 interface Chunk

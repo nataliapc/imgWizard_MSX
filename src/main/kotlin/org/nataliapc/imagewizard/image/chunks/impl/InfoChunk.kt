@@ -4,8 +4,10 @@ import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 
 
@@ -49,12 +51,12 @@ class InfoChunk : ChunkAbstractImpl(128)
 
     override fun build(): ByteArray
     {
-        val data = LittleEndianByteBuffer.allocate(3)
-            .put(infoVersion.toByte())
-            .putShort(chunkCount.toShort())
-            .array()
+        val out = DataByteArrayOutputStream()
 
-        return ensemble(data)
+        out.writeByte(infoVersion)
+        out.writeShortLE(chunkCount)
+
+        return ensemble(out.toByteArray())
     }
 
     override fun printInfo() {
