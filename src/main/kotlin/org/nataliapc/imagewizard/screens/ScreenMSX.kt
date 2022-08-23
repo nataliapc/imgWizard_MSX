@@ -2,6 +2,7 @@ package org.nataliapc.imagewizard.screens
 
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.imagewizard.utils.writeShortLE
+import java.awt.Color
 import java.io.DataOutputStream
 import java.io.File
 import java.lang.RuntimeException
@@ -109,11 +110,8 @@ enum class PaletteType(val bpp: Int, val rMask: Int, val gMask: Int, val bMask: 
     fun isShortSized() = bpp <=16 && !isByteSized()
 
     fun fromRGB24(rgb: Int): Int {
-        val r = (rgb and 0xff0000) shr 16
-        val g = (rgb and 0x00ff00) shr 8
-        val b = (rgb and 0x0000ff)
-
-        return fromRGB24(r, g, b)
+        val color = Color(rgb)
+        return fromRGB24(color.red, color.green, color.blue)
     }
 
     fun fromRGB24(red: Int, green: Int, blue: Int): Int {

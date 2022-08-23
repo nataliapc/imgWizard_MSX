@@ -1,6 +1,10 @@
 package org.nataliapc.imagewizard.compressor
 
 import java.lang.Exception
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.math.pow
+
 
 /*
     Based on Pletter v0.5c1 - www.xl2s.tk
@@ -419,13 +423,324 @@ class Pletter : Compressor
     }
 
     // ************************************************************************
+    // Based on pletter v0.5c ASM MSX unpacker
 
-    override fun uncompress(data: ByteArray): ByteArray {
-        TODO("Not yet implemented")
+    object stack {
+        val pila = Stack<Int>()
+        fun push(reg: Reg16) { pila.push(reg.get()) }
+        fun pop(reg: Reg16) { reg.ld(pila.pop()) }
+    }
+    class Reg8() {
+        private var reg8 = 0
+        private var exx = 0
+        companion object {
+            var carryFlag = false
+            var zeroFlag = false
+            var signFlag = false
+            var pvFlag = false
+            fun clearFlags() { carryFlag=false ; zeroFlag=false ; signFlag=false ; pvFlag=false }
+            fun updatePvFlagParity(reg: Reg8) { pvFlag = (reg.get().countOneBits() % 2) == 0 }
+            fun updatePvFlagParity(reg: Reg16) { pvFlag = (reg.get().countOneBits() % 2) == 0 }
+            fun updatePvFlagOverflow8(value: Int) { pvFlag = (value and 0x180) != 0 }
+            fun updatePvFlagOverflow16(value: Int) { pvFlag = (value and 0x18000) != 0 }
+            fun updateSignFlag(reg: Reg8) { signFlag = (reg.get() and 0x80) != 0 }
+            fun updateSignFlag(reg: Reg16) { signFlag = (reg.get() and 0x8000) != 0 }
+            fun updateZeroFlag(reg: Reg8) { zeroFlag = reg.get() == 0 }
+            fun updateZeroFlag(reg: Reg16) { zeroFlag = reg.get() == 0 }
+            fun updateCarryFlag8(value: Int) { carryFlag = value < 0 || (value and 0x100) != 0 }
+            fun updateCarryFlag16(value: Int) { carryFlag = value < 0 || (value and 0x10000) != 0 }
+        }
+
+        constructor(value: Int) : this() {
+            ld(value)
+        }
+        constructor(value: Byte) : this() {
+            ld(value.toUByte().toInt())
+        }
+        fun get(): Int = reg8
+        fun ld(value: Byte) { ld(value.toUByte().toInt()) }
+        fun ld(value: Int) { reg8 = value and 0xff }
+        fun or(reg8: Reg8) { or(reg8.get()) }
+        fun or(value: Int) {
+            //C and N flags cleared, P/V detects parity, and rest are modified by definition.
+            ld(get() or value)
+            carryFlag = false
+            updatePvFlagParity(this)
+            updateSignFlag(this)
+            updateZeroFlag(this)
+        }
+        fun inc() {
+            //Preserves C flag, N flag is reset, P/V detects overflow and rest are modified by definition.
+            updatePvFlagOverflow8(get() + 1)
+            ld(get() + 1)
+            updateZeroFlag(this)
+            updateSignFlag(this)
+        }
+        fun dec() {
+            //C flag preserved, P/V detects overflow and rest modified by definition.
+            ld(get() - 1)
+            updatePvFlagParity(this)
+            updateZeroFlag(this)
+            updateSignFlag(this)
+        }
+        fun add(value: Int) {
+            //N flag is reset, P/V is interpreted as overflow. Rest of the flags is modified by definition.
+            updateCarryFlag8(get() + value)
+            updatePvFlagOverflow8(get() + value)
+            ld(get() + value)
+            updateZeroFlag(this)
+            updateSignFlag(this)
+        }
+        fun add(reg: Reg8) { add(reg.get()) }
+        fun bit(bit: Int) {
+            //Opposite of the nth bit is written into the Z flag. C is preserved, N is reset, H is set, and S and P/V are undefined.
+            zeroFlag = (get() and 2.0.pow(bit).toInt()) == 0
+        }
+        fun res(bit: Int) {
+            //Flags are preserved.
+            ld(get() and 2.0.pow(bit).toInt().xor(0xff))
+        }
+        fun rl() {
+            //C is changed to the leaving 7th bit, H and N are reset, P/V is parity, S and Z are modified by definition.
+            reg8 = reg8 shl 1
+            reg8 = reg8 or (if (carryFlag) 1 else 0)
+            updateCarryFlag8(reg8)
+            ld(reg8)
+            updatePvFlagParity(this)
+            updateSignFlag(this)
+            updateZeroFlag(this)
+        }
+        fun rla() {
+            //C is changed to the leaving 7th bit, H and N are reset, P/V , S and Z are preserved.
+            reg8 = reg8 shl 1
+            reg8 = reg8 or (if (carryFlag) 1 else 0)
+            updateCarryFlag8(reg8)
+            ld(reg8)
+        }
+        fun exx() {
+            val aux = exx
+            exx = reg8
+            reg8 = aux
+        }
+        override fun toString() = "%02x ${get()}".format(get())
+    }
+    class Reg16() {
+        var high = Reg8()
+        var low = Reg8()
+
+        constructor(h: Reg8, l: Reg8): this() { this.high = h; this.low = l }
+        constructor(value: Int) : this() {
+            ld(value)
+        }
+        fun get(): Int = (high.get() shl 8) or low.get()
+        fun ld(value: Int) {
+            low.ld(value and 0xff)
+            high.ld((value shr 8) and 0xff)
+        }
+        fun ld(reg16: Reg16) { ld(reg16.get()) }
+        fun inc() {
+            //No flags altered.
+            low.ld(low.get() + 1)
+            if (low.get()==0) high.ld(high.get() + 1)
+        }
+        fun dec() {
+            //No flags altered.
+            ld(get() - 1)
+        }
+        fun add(value: Int) {
+            //Preserves the S, Z and P/V flags, and H is undefined. Rest of flags modified by definition.
+            Reg8.updateCarryFlag16(get() + value)
+            ld(get() + value)
+        }
+        fun add(reg: Reg16) { add(reg.get()) }
+        fun adc(reg: Reg16) {
+            //The N flag is reset, P/V is interpreted as overflow. The rest of the flags is modified by definition.
+            //In the case of 16-bit addition the H flag is undefined.
+            val newValue = get() + reg.get() + if(Reg8.carryFlag) 1 else 0
+            Reg8.updatePvFlagOverflow16(newValue)
+            Reg8.updateCarryFlag16(newValue)
+            ld(newValue)
+            Reg8.updateZeroFlag(this)
+            Reg8.updateSignFlag(this)
+        }
+        fun sbc(reg: Reg16) {
+            //N flag is set, P/V detects overflow, rest modified by definition.
+            //In the case of 16-bit registers, h flag is undefined.
+            val rest = reg.get() + if(Reg8.carryFlag) 1 else 0
+            Reg8.updateCarryFlag16(get() - rest)
+            Reg8.updatePvFlagOverflow16(get() - rest)
+            ld(get() - rest)
+            Reg8.updateSignFlag(this)
+            Reg8.updateZeroFlag(this)
+        }
+        fun exx() {
+            high.exx()
+            low.exx()
+        }
+        override fun toString() = "%04x ${get()}".format(get())
     }
 
-/*
+    /**
+        Max input size: 16Kb.
+        Max output size: 48Kb.
+     */
+    override fun uncompress(data: ByteArray): ByteArray {
+        val startOut = 0x4000
+        val out = ArrayList<Byte>(0)
+        val a = Reg8()
+        val h = Reg8() ; val l = Reg8()
+        val d = Reg8() ; val e = Reg8()
+        val b = Reg8() ; val c = Reg8()
+        val i = Reg8() ; val x = Reg8()
+        val ix = Reg16(i, x)
+        val bc = Reg16(b, c)
+        val hl = Reg16(h, l)   // Pointer to data (0)
+        val de = Reg16(d, e)   // Pointer to out (startOut)
+        de.ld(startOut)
+        fun ldi() {
+            //P/V is reset in case of overflow (if BC=0 after calling LDI).
+            var origOffset = 0
+            val orig = if (hl.get() >= startOut) { origOffset = startOut ; out.toByteArray() } else data
+            out.add(de.get() - startOut, orig[hl.get() - origOffset])
+            de.inc()
+            hl.inc()
+            Reg8.pvFlag = (bc.get() == 0)
+            bc.dec()
+        }
+        fun ldir() {
+            do {
+                ldi()
+            } while(bc.get() != 0)
+        }
+        fun exx() { bc.exx(); de.exx(); hl.exx() }
+        fun getBit() {
+            a.ld(data[hl.get()])                // ld a,(hl)
+            hl.inc()                            // inc hl
+            a.rla()                             // rla
+        }
+        fun getBitexx() {
+            exx()                               // exx
+            a.ld(data[hl.get()])                // ld a,(hl)
+            hl.inc()                            // inc hl
+            exx()                               // exx
+            a.rla()                             // rla
+        }
+        fun offsak() {
+            bc.inc()                            // inc bc
+            stack.push(hl)                      // push hl
+            exx()                               // exx
+            stack.push(hl)                      // push hl
+            exx()                               // exx
+            hl.ld(de)                           // ld l,e | ld h,d
+            hl.sbc(bc)                          // sbc hl,bc
+            stack.pop(bc)                       // pop bc
+            ldir()                              // ldir
+            stack.pop(hl)                       // pop hl
+        }
+        fun mode2() {
+            a.add(a)                            // add a,a
+            if (Reg8.zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            a.add(a)                            // add a,a
+            if (Reg8.zeroFlag) getBit()         // call z,getbit
+            if (Reg8.carryFlag) {               // jr nc,offsok
+                a.or(a)                         // or a
+                b.inc()                         // inc b
+                c.res(7)                    // res 7, c
+            }
+            offsak()
+        }
+        fun mode3() {
+            a.add(a)                            // add a,a
+            if (Reg8.zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode2()
+        }
+        fun mode4() {
+            a.add(a)                            // add a,a
+            if (Reg8.zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode3()
+        }
+        fun mode5() {
+            a.add(a)                            // add a,a
+            if (Reg8.zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode4()
+        }
+        fun mode6() {
+            a.add(a)                            // add a,a
+            if (Reg8.zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode5()
+        }
+        val modes = arrayListOf({ offsak() }, { mode2() }, { mode3() }, { mode4() }, { mode5() }, { mode6() })
 
-*/
+        a.ld(data[hl.get()])                    // ld a,(hl)
+        hl.inc()                                // inc hl
+        exx()                                   // exx
+        de.ld(0)                          // ld de, 0
+        a.add(a)                                // add a, a
+        a.inc()                                 // inc a
+        e.rl()                                  // rl  e
+        a.add(a)                                // add a, a
+        e.rl()                                  // rl  e
+        a.add(a)                                // add a, a
+        e.rl()                                  // rl  e
+        e.rl()                                  // rl  e
+        hl.ld(0)                          // ld hl, modes
+        hl.add(de)                              // add hl, de
+        ix.ld(hl.get()/2)
+        e.ld(1)                           // ld e, 1
+        exx()                                   // exx
+        // iy.ld(loop)
+//literal:
+        ldi()                                   // ldi
+//loop:
+        loop@ while (true) {
+            a.add(a)                            // add a, a
+            if (Reg8.zeroFlag) getBit()         // call z,getbit
+            if (!Reg8.carryFlag) {
+                ldi()                           // jr nc,literal
+                continue
+            }
+            exx()                               // exx
+            hl.ld(de)                           // ld h,d | ld l,e
+//getlen:
+            a.add(a)                            // add a, a
+            if (Reg8.zeroFlag) getBitexx()      // call z,getbitexx
+            if (Reg8.carryFlag) {               // jr nc,.lenok
+//.lus:
+                lus@ do {
+                    a.add(a)                    // add a,a
+                    if (Reg8.zeroFlag) getBitexx()// call z,getbitexx
+                    hl.adc(hl)                  // adc hl, hl
+                    if (Reg8.carryFlag) break@loop  // ret c
+                    a.add(a)                    // add a, a
+                    if (Reg8.zeroFlag) getBitexx()// call z,getbitexx
+                    if (!Reg8.carryFlag) break@lus // jr nc,.lenok
+                    a.add(a)                    // add a, a
+                    if (Reg8.zeroFlag) getBitexx()// call z,getbitexx
+                    hl.adc(hl)                  // adc hl,hl
+                    if (Reg8.carryFlag) break@loop// ret c
+                    a.add(a)                    // add a,a
+                    if (Reg8.zeroFlag) getBitexx()// call z,getbitexx
+                } while (Reg8.carryFlag)        // jp c,.lus
+            }
+//.lenok:
+            hl.inc()                            // inc hl
+            exx()                               // exx
+            c.ld(data[hl.get()])                // ld c, (hl)
+            hl.inc()                            // inc hl
+            b.ld(0)                       // ld b, #0
+            c.bit(7)                        // bit 7,c
+            if (Reg8.zeroFlag)
+                offsak()                        // jp z,offsok
+            else
+                modes[ix.get()]()               // jp (ix)
+            // jp (iy)
+        }
 
+        return out.toByteArray()
+    }
 }

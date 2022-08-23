@@ -2,6 +2,9 @@ package org.nataliapc.imagewizard.compressor
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.nataliapc.imagewizard.compressor.Pletter.Reg8
+import org.nataliapc.imagewizard.compressor.Pletter.Reg16
+
 
 @ExperimentalUnsignedTypes
 internal class PletterTest
@@ -45,4 +48,67 @@ internal class PletterTest
         assertArrayEquals(rawData2, pletter.uncompress(result))
     }
 
+    @Test
+    fun reg16_inc_Ok() {
+        val hl = Reg16(0xffff)
+        Reg8.clearFlags()
+
+        hl.inc()
+
+        assertEquals(0x0000, hl.get())
+        assertEquals(false, Reg8.zeroFlag)
+        assertEquals(false, Reg8.carryFlag)
+        assertEquals(false, Reg8.pvFlag)
+    }
+
+    @Test
+    fun reg16_dec_Ok() {
+        val hl = Reg16(0x0000)
+        Reg8.clearFlags()
+
+        hl.dec()
+
+        assertEquals(0xffff, hl.get())
+        assertEquals(false, Reg8.zeroFlag)
+        assertEquals(false, Reg8.carryFlag)
+        assertEquals(false, Reg8.pvFlag)
+    }
+
+    @Test
+    fun reg16_sbc_Ok() {
+        val de = Reg16()
+        val hl = Reg16()
+
+        for (i in 0..0xffff) {
+            hl.ld(10)
+            de.ld(i)
+            Reg8.carryFlag = true
+
+            hl.sbc(de)
+
+            assertEquals((10-i-1) and 0xffff, hl.get(), "i = $i")
+            assertEquals(hl.get() == 0, Reg8.zeroFlag, "i = $i")
+            assertEquals(i > 9, Reg8.carryFlag, "i = $i")
+            assertEquals(hl.get().toShort() < 0, Reg8.signFlag, "i = $i")
+        }
+    }
+
+    @Test
+    fun reg16_adc_Ok() {
+        val de = Reg16()
+        val hl = Reg16()
+
+        for (i in 0..0xffff) {
+            hl.ld(0xfff0)
+            de.ld(i)
+            Reg8.carryFlag = true
+
+            hl.adc(de)
+
+            assertEquals((0xfff0+i+1) and 0xffff, hl.get(), "i = $i")
+            assertEquals(hl.get() == 0, Reg8.zeroFlag, "i = $i")
+            assertEquals(i > 14, Reg8.carryFlag, "i = $i")
+            assertEquals(hl.get().toShort() < 0, Reg8.signFlag, "i = $i")
+        }
+    }
 }

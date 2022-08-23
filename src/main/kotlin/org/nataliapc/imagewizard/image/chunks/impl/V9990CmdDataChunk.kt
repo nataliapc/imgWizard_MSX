@@ -29,9 +29,9 @@ class V9990CmdDataChunk(data: ByteArray, private val compressor: Compressor) : C
         if (compressedData.size > MAX_CHUNK_DATA_SIZE) {
             throw RuntimeException("Maximum Chunk data size exceeded (max:$MAX_CHUNK_DATA_SIZE current:${compressedData.size})")
         }
-//        if (!compressor.uncompress(compressedData).contentEquals(data)) {
-//TODO            throw RuntimeException("Error compressing data with ${compressor.javaClass.simpleName}")
-//        }
+        if (!compressor.uncompress(compressedData).contentEquals(data)) {
+            throw RuntimeException("Error compressing data with ${compressor.javaClass.simpleName}")
+        }
     }
 
     companion object : ChunkCompanion {
@@ -39,10 +39,11 @@ class V9990CmdDataChunk(data: ByteArray, private val compressor: Compressor) : C
             val id = stream.readUnsignedByte()
             val len = stream.readUnsignedShortLE()
             val auxData = stream.readUnsignedShortLE()
+            val compressor = Compressor.Types.compressorById(id-33)
 
             val obj = V9990CmdDataChunk(
-                ByteArray(len),                             // TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! uncompress the data
-                Compressor.Types.compressorById(id-33)
+                compressor.uncompress(stream.readAllBytes()),
+                compressor
             )
 
             obj.checkId(id)
