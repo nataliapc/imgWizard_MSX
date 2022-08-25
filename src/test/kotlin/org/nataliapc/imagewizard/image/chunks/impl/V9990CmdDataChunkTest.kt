@@ -6,10 +6,68 @@ import org.nataliapc.imagewizard.compressor.Pletter
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
+import org.nataliapc.imagewizard.screens.ColorType
+import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
+import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
+import toHex
 import java.lang.RuntimeException
+import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import javax.imageio.ImageIO
 
 
+@ExperimentalUnsignedTypes
 internal class V9990CmdDataChunkTest {
+
+    @Test
+    fun from_Ok() {
+        val stream = DataByteArrayInputStream(byteArrayOf(33, 5,0, 5,0, 0,1,2,3,4))
+
+        val result = V9990CmdDataChunk.from(stream)
+
+        assertEquals(33, result.getId())
+        assertArrayEquals(byteArrayOf(0,1,2,3,4), result.getRawData())
+    }
+
+    @Test
+    fun fromRectangle_Ok() {
+        val bufimg = BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB)
+        bufimg.setRGB(0,0,0x000000)
+        bufimg.setRGB(1,0,0xff0000)
+        bufimg.setRGB(0,1,0x00ff00)
+        bufimg.setRGB(1,1,0x0000ff)
+        val stream = DataByteArrayOutputStream()
+        ImageIO.write(bufimg, "png", stream)
+        val inStream = ByteArrayInputStream(stream.toByteArray())
+        val image = ImageWrapperImpl.from(inStream, colorType = ColorType.BD16)
+
+        val result = V9990CmdDataChunk.fromRectangle(image,0,0,2,2, Raw())
+
+        assertEquals(33, result.getId())
+        assertArrayEquals(
+            ubyteArrayOf(0x00u,0x00u,0xe0u,0x03u,0x00u,0x7cu,0x1fu,0x00u).toByteArray(),
+            result.getUncompressedData()
+        )
+    }
+
+    @Test
+    fun getRawData_Ok() {
+        val chunk = V9990CmdDataChunk(byteArrayOf(0,1,2,3,4), Rle())
+
+        val result = chunk.getRawData()
+
+        assertArrayEquals(byteArrayOf(5, 0,1,2,3,4, 5,0), result)
+    }
+
+    @Test
+    fun getUncompressedData_Ok() {
+        val chunk = V9990CmdDataChunk(byteArrayOf(0,1,2,3,4), Rle())
+
+        val result = chunk.getUncompressedData()
+
+        assertArrayEquals(byteArrayOf(0,1,2,3,4), result)
+    }
 
     @Test
     fun build_Ok_Raw() {
@@ -56,5 +114,12 @@ internal class V9990CmdDataChunkTest {
         assertThrows(RuntimeException::class.java) {
             V9990CmdDataChunk(ByteArray(MAX_CHUNK_DATA_SIZE + 1), Raw())
         }
+    }
+
+    @Test
+    fun printInfo_Ok() {
+        val chunk = V9990CmdDataChunk(byteArrayOf(1,2,3,4,5,1,2,3,4,5,6,7), Pletter())
+
+        chunk.printInfo()
     }
 }

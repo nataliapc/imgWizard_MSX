@@ -7,24 +7,21 @@ import org.junit.jupiter.api.Assertions.*
 internal class DaadClearWindowTest {
 
     @Test
-    fun getLocation_Ok()
-    {
-        val chunk = DaadRedirectToImage(63)
-
-        val result = chunk.location
-
-        assertEquals(63, result)
-    }
-
-    @Test
     fun build_Ok()
     {
-        val chunk = DaadRedirectToImage(63)
+        val chunk = DaadClearWindow()
 
         val result = chunk.build()
 
         assertArrayEquals(
-            byteArrayOf(0, 0,0, 63,0),
+            byteArrayOf(17, 0,0, 0,0),
             result)
+    }
+
+    @Test
+    fun printInfo_Ok() {
+        val chunk = DaadClearWindow()
+
+        chunk.printInfo()
     }
 }

@@ -18,4 +18,11 @@ internal class InfoChunkTest {
             byteArrayOf(128u.toByte(), 3,0, 0,0, 1, 0,0),
             result)
     }
+
+    @Test
+    fun printInfo_Ok() {
+        val chunk = InfoChunk()
+
+        chunk.printInfo()
+    }
 }
