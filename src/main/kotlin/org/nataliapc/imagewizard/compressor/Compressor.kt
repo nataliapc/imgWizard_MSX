@@ -25,3 +25,5 @@ interface Compressor
         }
     }
 }
+
+abstract class CompressorImpl(override val id: Int): Compressor

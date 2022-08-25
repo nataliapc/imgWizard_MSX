@@ -4,32 +4,41 @@ import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 
 
 /*
-    Chunk DAAD Redirect format:
+    Chunk Pause format:
         Offset Size  Description
         --header--
-        0x0000  1    Chunk type: (0:redirect)
-        0x0001  2    Chunk data length (always 0)
-        0x0003  2    New image location to read
+        0x0000  1    Chunk type: (19:Pause)
+        0x0001  2    Chunk data length (0x0000)
+        0x0003  2    Time to wait in 1/50 sec units
  */
-class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
+class PauseChunk(ticks: Int) : ChunkAbstractImpl(19)
 {
+    override var auxData: Int = ticks
+
     companion object : ChunkCompanion {
-        override fun from(stream: DataInputStream): DaadRedirectToImage {
+        override fun from(stream: DataInputStream): PauseChunk {
             val id = stream.readUnsignedByte()
             stream.readUnsignedShortLE()                    // Skip length
             val aux = stream.readUnsignedShortLE()
 
-            val obj = DaadRedirectToImage(aux.toShort())
+            val obj = PauseChunk(aux)
             obj.checkId(id)
             return obj
         }
+    }
+
+    fun getTicks(): Int {
+        return auxData
+    }
+
+    fun setTicks(value: Int) {
+        auxData = value
     }
 
     override fun build(): ByteArray
@@ -39,12 +48,12 @@ class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
 
         out.write(header)
         out.writeShortLE(0)
-        out.writeShortLE(location)
+        out.writeShortLE(auxData)
 
         return out.toByteArray()
     }
 
     override fun printInfo() {
-        println("[${getId()}] DAAD Redirect Image location (to: $location)")
+        println("[${getId()}] Pause Chunk: $auxData ticks (~${"%.1f".format(auxData/50.0)} sec)")
     }
 }

@@ -5,6 +5,7 @@ import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.image.chunks.ChunkData
+import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import java.io.DataInputStream
@@ -12,17 +13,17 @@ import java.lang.RuntimeException
 
 
 /*
-    Chunk V9990 Send data to Command Port (P#2):
+    Chunk Screen Bitmap format:
         Offset Size  Description
         --header--
-        0x0000  1    Chunk type  (Raw:33 RLE:34 Pletter:35)
+        0x0000  1    Chunk type  (Raw:2 RLE:3 Pletter:4)
         0x0001  2    Compressed data length (max: 2043 bytes)
         0x0003  2    Uncompressed data length in bytes
         ---data---
         0x0005 ...   Compressed data (1-2043 bytes length)
  */
-class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkAbstractImpl(ID_BASE + compressor.id),
-    ChunkData
+class ScreenBitmapChunk private constructor(val compressor: Compressor) :
+    ChunkAbstractImpl(ID_BASE + compressor.id), ChunkData
 {
     private var compressedData = byteArrayOf()
 
@@ -33,7 +34,7 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
             throw RuntimeException("Maximum Chunk data size exceeded (max:$MAX_CHUNK_DATA_SIZE current:${compressedData.size})")
         }
         if (!compressor.uncompress(compressedData).contentEquals(data)) {
-            throw RuntimeException("Error uncompressing data with ${compressor.javaClass.simpleName}")
+            throw RuntimeException("Error compressing data with ${compressor.javaClass.simpleName}")
         }
     }
 
@@ -43,23 +44,27 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
     }
 
     companion object : ChunkCompanion {
-        const val ID_BASE = 33
+        const val ID_BASE = 2
 
-        override fun from(stream: DataInputStream): V9990CmdDataChunk {
+        override fun from(stream: DataInputStream): ScreenBitmapChunk {
             val id = stream.readUnsignedByte()
             val len = stream.readUnsignedShortLE()
             val auxData = stream.readUnsignedShortLE()
             val compressedData = stream.readNBytes(len)
 
-            val obj = V9990CmdDataChunk(id, compressedData, auxData)
+            val obj = ScreenBitmapChunk(id, compressedData, auxData)
             obj.checkId(id)
 
             return obj
         }
 
-        fun fromRectangle(scr: ScreenRectangle, x: Int, y: Int, w: Int, h: Int, compressor: Compressor): V9990CmdDataChunk
+        fun fromFullImage(scr: ScreenFullImage, compressor: Compressor): ScreenBitmapChunk {
+            return ScreenBitmapChunk(scr.getFullImage(), compressor)
+        }
+
+        fun fromRectangle(scr: ScreenRectangle, x: Int, y: Int, w: Int, h: Int, compressor: Compressor): ScreenBitmapChunk
         {
-            return V9990CmdDataChunk(scr.getRectangle(x, y, w, h), compressor)
+            return ScreenBitmapChunk(scr.getRectangle(x, y, w, h), compressor)
         }
     }
 
@@ -73,6 +78,6 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
     }
 
     override fun printInfo() {
-        println("[${getId()}] V9990 ${compressor.javaClass.simpleName.uppercase()} Data Command: $auxData bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/auxData}%]")
+        println("[${getId()}] Screen Bitmap ${compressor.javaClass.simpleName.uppercase()} Data: $auxData bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/auxData}%]")
     }
 }

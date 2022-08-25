@@ -11,12 +11,12 @@ import java.lang.RuntimeException
 
 abstract class ChunkAbstractImpl(private val id: Int): Chunk
 {
-    var auxData: Int = 0
+    open var auxData: Int = 0
 
     companion object : ChunkCompanion {
         const val MAX_CHUNK_DATA_SIZE = 2043
 
-        override fun createFrom(stream: DataInputStream): Chunk {
+        override fun from(stream: DataInputStream): Chunk {
             val id = stream.readUnsignedByte()
             val length = stream.readUnsignedShortLE()
             stream.readNBytes(2 + length)

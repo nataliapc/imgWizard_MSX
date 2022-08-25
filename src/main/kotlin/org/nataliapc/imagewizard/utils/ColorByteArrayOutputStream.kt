@@ -21,7 +21,7 @@ class ColorByteArrayOutputStream(val colorType: ColorType, val paletteType: Pale
 
     fun writeColor(value: Int) {
         if (colorType.bpp == 16) {
-            writeShortLE(value)
+            writeShortLE(paletteType.fromRGB24(value))
         } else {
             lastBitWrited -= colorType.bpp
             currentByte = currentByte or ((value and colorType.mask) shl lastBitWrited)

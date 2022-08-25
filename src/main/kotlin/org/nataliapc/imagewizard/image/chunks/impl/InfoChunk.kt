@@ -28,7 +28,7 @@ class InfoChunk : ChunkAbstractImpl(128)
     private var chunkCount = 0
 
     companion object : ChunkCompanion {
-        override fun createFrom(stream: DataInputStream): Chunk {
+        override fun from(stream: DataInputStream): Chunk {
             val id = stream.readUnsignedByte()
             stream.readUnsignedShortLE()                    // Skip length
 
@@ -60,8 +60,7 @@ class InfoChunk : ChunkAbstractImpl(128)
     }
 
     override fun printInfo() {
-        println("    ID ${getId()}: Image Info\n"+
-                "        Chunk version: $infoVersion\n"+
+        println("[${getId()}] Image Info v$infoVersion\n"+
                 "        Chunk count: $chunkCount")
     }
 }

@@ -91,7 +91,7 @@ open class V9990CmdChunk(
     }
 
     companion object : ChunkCompanion {
-        override fun createFrom(stream: DataInputStream): Chunk {
+        override fun from(stream: DataInputStream): Chunk {
             val id = stream.readUnsignedByte()
             stream.readUnsignedShortLE()                    // Skip length
             val auxData = stream.readUnsignedShortLE()
@@ -137,10 +137,10 @@ open class V9990CmdChunk(
     }
 
     override fun printInfo() {
-        println("    ID ${getId()}: V9990 Command($sx,$sy, $dx,$dy, $nx,$ny, $arg, ${log.name}, 0x${Integer.toHexString(mask)}, $foreColor,$backColor, ${cmd.name})")
+        println("[${getId()}] V9990 Command($sx,$sy, $dx,$dy, $nx,$ny, $arg, ${log.name}, 0x${Integer.toHexString(mask)}, $foreColor,$backColor, ${cmd.name})")
     }
 
-    object Stop : V9990CmdChunk(0,0,0,0,0,0,0, LogicalOp.None,0,0, 0, Command.Stop)
+    class Stop : V9990CmdChunk(0,0,0,0,0,0,0, LogicalOp.None,0,0, 0, Command.Stop)
 
     class RectangleToSend(posX: Int, posY: Int, width: Int, height: Int) :
         V9990CmdChunk(0, 0, posX, posY, width, height, 0, LogicalOp.IMP, 0xffff, 0, 0, Command.LMMC)

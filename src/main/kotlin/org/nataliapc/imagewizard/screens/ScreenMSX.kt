@@ -1,16 +1,17 @@
 package org.nataliapc.imagewizard.screens
 
+import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.awt.Color
 import java.io.DataOutputStream
 import java.io.File
 import java.lang.RuntimeException
-import kotlin.math.ceil
+import kotlin.math.round
 
 
-interface ScreenMSX : ScreenRectangle {
-    fun readFromFile(file: File): ScreenMSX
+interface ScreenMSX : ScreenRectangle, ScreenFullImage {
+    fun fromFile(file: File): ScreenMSX
     val colorType: ColorType
     val paletteType: PaletteType
 }
@@ -26,12 +27,12 @@ class ScreenFactory {
     fun getSC8(): ScreenMSX = ScreenBitmapImpl.SC8()
     fun getSC10(): ScreenMSX = ScreenBitmapImpl.SC10()
     fun getSC12(): ScreenMSX = ScreenBitmapImpl.SC12()
-    fun readSC5(file: File): ScreenMSX = ScreenBitmapImpl.SC5().readFromFile(file)
-    fun readSC6(file: File): ScreenMSX = ScreenBitmapImpl.SC6().readFromFile(file)
-    fun readSC7(file: File): ScreenMSX = ScreenBitmapImpl.SC7().readFromFile(file)
-    fun readSC8(file: File): ScreenMSX = ScreenBitmapImpl.SC8().readFromFile(file)
-    fun readSC10(file: File): ScreenMSX = ScreenBitmapImpl.SC10().readFromFile(file)
-    fun reafSC12(file: File): ScreenMSX = ScreenBitmapImpl.SC12().readFromFile(file)
+    fun readSC5(file: File): ScreenMSX = ScreenBitmapImpl.SC5().fromFile(file)
+    fun readSC6(file: File): ScreenMSX = ScreenBitmapImpl.SC6().fromFile(file)
+    fun readSC7(file: File): ScreenMSX = ScreenBitmapImpl.SC7().fromFile(file)
+    fun readSC8(file: File): ScreenMSX = ScreenBitmapImpl.SC8().fromFile(file)
+    fun readSC10(file: File): ScreenMSX = ScreenBitmapImpl.SC10().fromFile(file)
+    fun reafSC12(file: File): ScreenMSX = ScreenBitmapImpl.SC12().fromFile(file)
 }
 
 enum class Chipset(val ramKb: Int) {
@@ -116,9 +117,9 @@ enum class PaletteType(val bpp: Int, val rMask: Int, val gMask: Int, val bMask: 
 
     fun fromRGB24(red: Int, green: Int, blue: Int): Int {
         rMask.countLeadingZeroBits()
-        val r = ceil(red * (rMask shr rIni) / 255.0).toInt() shl rIni
-        val g = ceil(green * (gMask shr gIni) / 255.0).toInt() shl gIni
-        val b = ceil(blue * (bMask shr bIni) / 255.0).toInt() shl bIni
+        val r = round(red * (rMask shr rIni) / 255.0).toInt() shl rIni
+        val g = round(green * (gMask shr gIni) / 255.0).toInt() shl gIni
+        val b = round(blue * (bMask shr bIni) / 255.0).toInt() shl bIni
         return r or g or b
     }
 
@@ -171,7 +172,17 @@ open class ScreenBitmapImpl(
         calculateMaxScreenHeight()
     }
 
-    override fun readFromFile(file: File): ScreenMSX {
+    companion object {
+        fun from(file: File): ScreenMSX {
+            TODO("Not yet implemented")
+        }
+    }
+
+    override fun fromFile(file: File): ScreenMSX {
+        TODO("Not yet implemented")
+    }
+
+    override fun getFullImage(): ByteArray {
         TODO("Not yet implemented")
     }
 

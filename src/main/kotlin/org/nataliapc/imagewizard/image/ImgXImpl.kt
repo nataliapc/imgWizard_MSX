@@ -3,6 +3,7 @@ package org.nataliapc.imagewizard.image
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.File
@@ -13,6 +14,7 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
 {
     private val chunks = mutableListOf<Chunk>()
     private var infoChunk: InfoChunk? = null
+    private lateinit var header: String
 
     companion object {
         private const val magicHeader = "IMGX"
@@ -23,9 +25,9 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
 
         fun from(stream: DataInputStream): ImgX {
             val imgX = ImgXImpl(false)
-            val header = String(stream.readNBytes(4))
-            if (header != magicHeader) {
-                throw RuntimeException("Bad magic header reading IMX ($header)")
+            imgX.header = String(stream.readNBytes(magicHeader.length))
+            if (!imgX.header.startsWith(magicHeader.subSequence(0, 4))) {
+                throw RuntimeException("Bad magic header reading IMX ($imgX.header)")
             }
             while (stream.available() > 0) {
                 imgX.add(Chunk.Factory.createFromStream(stream))
@@ -92,8 +94,9 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
     }
 
     override fun printInfo() {
+        println("### Image type: $header")
         chunks.forEachIndexed { index, it ->
-            println("CHUNK #$index:")
+            print("    CHUNK #$index: ")
             it.printInfo()
         }
     }

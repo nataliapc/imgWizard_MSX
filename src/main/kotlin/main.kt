@@ -8,7 +8,6 @@ import org.nataliapc.imagewizard.screens.ColorType
 import org.nataliapc.imagewizard.screens.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
-import java.io.DataInputStream
 import java.io.File
 import java.io.FileOutputStream
 import kotlin.math.absoluteValue
@@ -22,13 +21,21 @@ fun IntArray.toHex(): String = joinToString(separator = " ") { eachByte -> "%06x
 
 fun main(args: Array<String>) {
 
-    when (args[0].lowercase()) {
-        "l" -> cmdL_ListContent(args)
-        "gs" -> cmdGS_V9990ImageFromRectangle(args)
-        "c","cl" -> cmdCL_CreateImageIMx(args)
-        "d" -> cmdD_RemoveChunkFromIMx(args)
-        "j" -> cmdJ_JoinImageFiles(args)
-        else -> showHelp()
+    if (args.isEmpty()) {
+        showHelp()
+    } else {
+        when (args[0].lowercase()) {
+            "l" -> cmdL_ListContent(args)
+//            "c", "cl" -> cmdCL_CreateImageIMx(args)
+//            "s" -> cmdS_CreateImageFromRectangle(args)
+            "gs" -> cmdGS_V9990ImageFromRectangle(args)
+//            "r" -> cmdR_LocationRedirection(args)
+            "d" -> cmdD_RemoveChunkFromIMx(args)
+            "j" -> cmdJ_JoinImageFiles(args)
+//            "5a" -> cmd5A_TransformSC5toSC10(args)
+//            "ca" -> cmd5A_TransformSC12toSC10(args)
+            else -> showHelp()
+        }
     }
 }
 
@@ -84,7 +91,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>) {
 // l <file.IM?>
 private fun cmdL_ListContent(args: Array<String>) {
     val fileIn = getFile(args[1])
-    ImgXImpl.from(DataInputStream(fileIn.inputStream()))
+    ImgXImpl.from(fileIn)
         .printInfo()
 }
 

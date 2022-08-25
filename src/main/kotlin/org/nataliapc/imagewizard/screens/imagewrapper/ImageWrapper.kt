@@ -3,9 +3,11 @@ package org.nataliapc.imagewizard.screens.imagewrapper
 import org.nataliapc.imagewizard.screens.ColorType
 import org.nataliapc.imagewizard.screens.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmap
+import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.imagewizard.utils.ColorByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
+import toHex
 import java.awt.image.BufferedImage
 import java.awt.image.IndexColorModel
 import java.io.File
@@ -16,7 +18,7 @@ import javax.imageio.ImageIO
 import kotlin.math.pow
 
 
-interface ImageWrapper: ScreenRectangle
+interface ImageWrapper: ScreenRectangle, ScreenFullImage
 {
     fun getWidth(): Int
     fun getHeight(): Int
@@ -32,9 +34,9 @@ interface ImageWrapper: ScreenRectangle
 class ImageWrapperImpl private constructor(): ImageWrapper
 {
     private lateinit var image: BufferedImage
-    var colorType = ColorType.BD8
+    var colorType = defaultColorType
         private set
-    var paletteType = PaletteType.None
+    var paletteType = defaultPaletteType
         private set
 
     override fun getWidth(): Int = image.width
@@ -42,15 +44,18 @@ class ImageWrapperImpl private constructor(): ImageWrapper
 
     companion object
     {
+        private val defaultColorType = ColorType.BD8
+        private val defaultPaletteType = PaletteType.GRB555
+
         fun from(file:File, screen: ScreenBitmap): ImageWrapper {
             return from(file, screen.colorType, screen.paletteType)
         }
 
-        fun from(file: File, colorType: ColorType, paletteType: PaletteType): ImageWrapper {
+        fun from(file: File, colorType: ColorType = defaultColorType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
             return from(file.inputStream(), colorType, paletteType)
         }
 
-        fun from(stream: InputStream, colorType: ColorType, paletteType: PaletteType): ImageWrapper {
+        fun from(stream: InputStream, colorType: ColorType = defaultColorType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
             val obj = ImageWrapperImpl()
             obj.colorType = colorType
             obj.paletteType = paletteType
@@ -91,6 +96,10 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         return palette
     }
 
+    override fun getFullImage(): ByteArray {
+        return getRectangle(0, 0, image.width, image.height)
+    }
+
     override fun getRectangle(x: Int, y: Int, w: Int, h: Int): ByteArray {
         if (x < 0 || y < 0 || x+w > image.width || y+h > image.height) {
             throw RuntimeException("Rectangle ($x,$y,$w,$h) not match image bounds (${image.width}x${image.height})")
@@ -105,11 +114,7 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         val out = ColorByteArrayOutputStream(colorType, paletteType)
         val palette = if (isIndexed()) { getOriginalPalette() } else { null }
         intArray.forEach {
-            if (palette != null) {
-                out.writeColor(palette.indexOf(it))
-            } else {
-                out.writeColor(it)
-            }
+            out.writeColor(palette?.indexOf(it) ?: it)
         }
         out.writeFlush()
 

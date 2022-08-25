@@ -1,9 +1,7 @@
 package org.nataliapc.imagewizard.compressor
 
-class Raw : Compressor
+class Raw : CompressorImpl(0)
 {
-    override val id = 0
-
     override fun compress(data: ByteArray): ByteArray {
         return data
     }

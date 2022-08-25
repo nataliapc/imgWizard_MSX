@@ -10,10 +10,8 @@ import java.lang.RuntimeException
 class Rle(private val addSize: Boolean = false,
           private val eof: Boolean = true,
           private val mark: Byte? = null,
-          private val transparent: Byte? = null) : Compressor
+          private val transparent: Byte? = null) : CompressorImpl(1)
 {
-    override val id: Int = 1
-
     override fun compress(data: ByteArray): ByteArray {
         val out = DataByteArrayOutputStream()
 

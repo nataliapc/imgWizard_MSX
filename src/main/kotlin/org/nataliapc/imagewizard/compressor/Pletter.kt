@@ -10,10 +10,8 @@ import kotlin.math.pow
     Based on Pletter v0.5c1 - www.xl2s.tk
     https://github.com/nanochess/Pletter
 */
-class Pletter : Compressor
+class Pletter : CompressorImpl(2)
 {
-    override val id = 2
-
     private class Metadata {
         var reeks: Int = 0     /* Total times that byte is repeated */
         var cpos = IntArray(7)

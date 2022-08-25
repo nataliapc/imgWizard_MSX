@@ -4,29 +4,29 @@ import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 
 
 /*
-    Chunk DAAD Redirect format:
+    Chunk ClearWindow format:
         Offset Size  Description
         --header--
-        0x0000  1    Chunk type: (0:redirect)
-        0x0001  2    Chunk data length (always 0)
-        0x0003  2    New image location to read
+        0x0000  1    Chunk type: (17:ClearWindow)
+        0x0001  2    Chunk data length (0x0000)
+        0x0003  2    Empty chunk header (0x0000)
  */
-class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
+class DaadClearWindow() : ChunkAbstractImpl(17)
 {
     companion object : ChunkCompanion {
-        override fun from(stream: DataInputStream): DaadRedirectToImage {
+        override fun from(stream: DataInputStream): Chunk {
             val id = stream.readUnsignedByte()
             stream.readUnsignedShortLE()                    // Skip length
             val aux = stream.readUnsignedShortLE()
 
-            val obj = DaadRedirectToImage(aux.toShort())
+            val obj = DaadClearWindow()
+            obj.auxData = aux
             obj.checkId(id)
             return obj
         }
@@ -39,12 +39,12 @@ class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
 
         out.write(header)
         out.writeShortLE(0)
-        out.writeShortLE(location)
+        out.writeShortLE(auxData)
 
         return out.toByteArray()
     }
 
     override fun printInfo() {
-        println("[${getId()}] DAAD Redirect Image location (to: $location)")
+        println("[${getId()}] DAAD Clear Window")
     }
 }
