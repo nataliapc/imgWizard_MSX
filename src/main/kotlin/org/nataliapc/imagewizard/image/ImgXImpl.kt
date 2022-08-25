@@ -12,9 +12,9 @@ import java.lang.RuntimeException
 
 class ImgXImpl(withInfoChunk: Boolean = true): ImgX
 {
+    private var header: String = magicHeader
     private val chunks = mutableListOf<Chunk>()
     private var infoChunk: InfoChunk? = null
-    private lateinit var header: String
 
     companion object {
         private const val magicHeader = "IMGX"

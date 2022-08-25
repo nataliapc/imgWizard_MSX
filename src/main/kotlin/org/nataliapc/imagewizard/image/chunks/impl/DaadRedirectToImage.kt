@@ -45,6 +45,6 @@ class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
     }
 
     override fun printInfo() {
-        println("[${getId()}] DAAD Redirect Image location (to: $location)")
+        println("[${getId()}] DAAD Redirect Image (to location: $location)")
     }
 }

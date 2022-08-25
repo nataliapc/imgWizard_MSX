@@ -1,6 +1,7 @@
 import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
+import org.nataliapc.imagewizard.image.chunks.impl.DaadRedirectToImage
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdDataChunk
@@ -19,8 +20,8 @@ const val verbose = true
 fun ByteArray.toHex(): String = joinToString(separator = " ") { eachByte -> "%02x".format(eachByte) }
 fun IntArray.toHex(): String = joinToString(separator = " ") { eachByte -> "%06x".format(eachByte) }
 
-fun main(args: Array<String>) {
-
+fun main(args: Array<String>)
+{
     if (args.isEmpty()) {
         showHelp()
     } else {
@@ -29,7 +30,7 @@ fun main(args: Array<String>) {
 //            "c", "cl" -> cmdCL_CreateImageIMx(args)
 //            "s" -> cmdS_CreateImageFromRectangle(args)
             "gs" -> cmdGS_V9990ImageFromRectangle(args)
-//            "r" -> cmdR_LocationRedirection(args)
+            "r" -> cmdR_LocationRedirection(args)
             "d" -> cmdD_RemoveChunkFromIMx(args)
             "j" -> cmdJ_JoinImageFiles(args)
 //            "5a" -> cmd5A_TransformSC5toSC10(args)
@@ -40,7 +41,8 @@ fun main(args: Array<String>) {
 }
 
 // j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3.IM?] ...
-fun cmdJ_JoinImageFiles(args: Array<String>) {
+fun cmdJ_JoinImageFiles(args: Array<String>)
+{
     if (args.size < 3) {
         showError("Insuficient argmuments")
     }
@@ -66,7 +68,8 @@ fun cmdJ_JoinImageFiles(args: Array<String>) {
 }
 
 // d <fileIn.IM?> <chunk_id>
-fun cmdD_RemoveChunkFromIMx(args: Array<String>) {
+fun cmdD_RemoveChunkFromIMx(args: Array<String>)
+{
     if (args.size != 3 && args[2].toIntOrNull() != null) {
         showError("Bad argmuments")
     }
@@ -84,19 +87,22 @@ fun cmdD_RemoveChunkFromIMx(args: Array<String>) {
 }
 
 // c[l] <fileIn.SC?> <lines> [compressor | transparent_color]
-fun cmdCL_CreateImageIMx(args: Array<String>) {
+fun cmdCL_CreateImageIMx(args: Array<String>)
+{
     TODO()
 }
 
 // l <file.IM?>
-private fun cmdL_ListContent(args: Array<String>) {
+private fun cmdL_ListContent(args: Array<String>)
+{
     val fileIn = getFile(args[1])
     ImgXImpl.from(fileIn)
         .printInfo()
 }
 
 // gs <file.PNG> <colors> <compressor> [<sx> <sy> <nx> <ny> [<dx> <dy>]]
-fun cmdGS_V9990ImageFromRectangle(args: Array<String>) {
+fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
+{
     if (args.size != 4 && args.size != 8 && args.size != 10) {
         showError("Bad argmuments number: ${args.size}")
     }
@@ -128,7 +134,30 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>) {
     imgx.printInfo()
 }
 
-private fun getFile(filename: String, verb: String = "Reading"): File {
+// r <fileOut.IM?> <target_loc>
+fun cmdR_LocationRedirection(args: Array<String>)
+{
+    if (args.size != 3) {
+        showError("Bad arguments number: ${args.size}")
+    }
+    val location = args[2].toShortOrNull()
+    if (location == null || location < 0 || location > 255) {
+        showError("Location is not a number or is out of range [0..255]")
+    }
+
+    val fileOut = File(args[1])
+    println("### Creating file ${fileOut.name}")
+
+    val out = FileOutputStream(fileOut)
+    val imgx = ImgXImpl(false).add(DaadRedirectToImage(location!!))
+    out.use {
+        out.write(imgx.build())
+    }
+    imgx.printInfo()
+}
+
+private fun getFile(filename: String, verb: String = "Reading"): File
+{
     val file = File(filename)
     println("### $verb file ${file.name}")
     if (!file.exists()) {
@@ -137,7 +166,8 @@ private fun getFile(filename: String, verb: String = "Reading"): File {
     return file
 }
 
-private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<ByteArray> {
+private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<ByteArray>
+{
     val out = arrayListOf<ByteArray>()
     var start = 0
     var end: Int
@@ -173,7 +203,8 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
     return out
 }
 
-private fun showHelp(exit: Boolean = true) {
+private fun showHelp(exit: Boolean = true)
+{
     val version = "1.4.00"
     val appname = "imgWizard"
     println("\n"+
@@ -238,12 +269,14 @@ private fun showHelp(exit: Boolean = true) {
     }
 }
 
-fun showError(msg: String) {
+fun showError(msg: String)
+{
     println(msg)
     exitProcess(1)
 }
 
-fun otra() {
+fun otra()
+{
     val sc = ScreenBitmapImpl.SC5()
 
     val image = ImageWrapperImpl.from(File("img.png"), sc.colorType, sc.paletteType)
