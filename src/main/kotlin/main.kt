@@ -9,16 +9,16 @@ import org.nataliapc.imagewizard.screens.ColorType
 import org.nataliapc.imagewizard.screens.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
+import org.nataliapc.imagewizard.utils.toHex
 import java.io.File
 import java.io.FileOutputStream
+import java.lang.RuntimeException
 import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
 
 
 const val verbose = true
 
-fun ByteArray.toHex(): String = joinToString(separator = " ") { eachByte -> "%02x".format(eachByte) }
-fun IntArray.toHex(): String = joinToString(separator = " ") { eachByte -> "%06x".format(eachByte) }
 
 fun main(args: Array<String>)
 {
@@ -70,14 +70,15 @@ fun cmdJ_JoinImageFiles(args: Array<String>)
 // d <fileIn.IM?> <chunk_id>
 fun cmdD_RemoveChunkFromIMx(args: Array<String>)
 {
-    if (args.size != 3 && args[2].toIntOrNull() != null) {
-        showError("Bad argmuments")
+    if (args.size != 3) {
+        showError("Bad argmuments number")
     }
+    val chunkToRemove = checkNumericArg(args[2])
     val fileIn = getFile(args[1])
     val imgx = ImgXImpl.from(fileIn)
 
-    println("    Removing chunk #${args[2]}")
-    imgx.remove(args[2].toInt())
+    println("    Removing chunk #$chunkToRemove")
+    imgx.remove(chunkToRemove)
 
     println("### Saving file ${fileIn.name}")
     val out = FileOutputStream(fileIn)
@@ -89,6 +90,7 @@ fun cmdD_RemoveChunkFromIMx(args: Array<String>)
 // c[l] <fileIn.SC?> <lines> [compressor | transparent_color]
 fun cmdCL_CreateImageIMx(args: Array<String>)
 {
+    val lines = checkNumericArg(args[2])
     TODO()
 }
 
@@ -111,12 +113,12 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     val compressor = Compressor.Types.valueOf(args[3].uppercase()).instance
     val colorType = ColorType.valueOf(args[2].uppercase())
     val image = ImageWrapperImpl.from(fileIn, colorType, PaletteType.GRB555)
-    val sx = if (args.size == 4) 0 else args[4].toInt()
-    val sy = if (args.size == 4) 0 else args[5].toInt()
-    val nx = if (args.size == 4) image.getWidth() else args[6].toInt()
-    val ny = if (args.size == 4) image.getHeight() else args[7].toInt()
-    val dx = if (args.size == 8) sx else args[8].toInt()
-    val dy = if (args.size == 8) sy else args[9].toInt()
+    val sx = if (args.size == 4) 0 else checkNumericArg(args[4])
+    val sy = if (args.size == 4) 0 else checkNumericArg(args[5])
+    val nx = if (args.size == 4) image.getWidth() else checkNumericArg(args[6])
+    val ny = if (args.size == 4) image.getHeight() else checkNumericArg(args[7])
+    val dx = if (args.size == 8) sx else checkNumericArg(args[8])
+    val dy = if (args.size == 8) sy else checkNumericArg(args[9])
 
     val imgx = ImgXImpl().add(V9990CmdChunk.RectangleToSend(dx, dy, nx, ny))
     val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor)
@@ -140,16 +142,16 @@ fun cmdR_LocationRedirection(args: Array<String>)
     if (args.size != 3) {
         showError("Bad arguments number: ${args.size}")
     }
-    val location = args[2].toShortOrNull()
-    if (location == null || location < 0 || location > 255) {
-        showError("Location is not a number or is out of range [0..255]")
+    val location = checkNumericArg(args[2])
+    if (location < 0 || location > 255) {
+        showError("Location is out of range [0..255]")
     }
 
     val fileOut = File(args[1])
     println("### Creating file ${fileOut.name}")
 
     val out = FileOutputStream(fileOut)
-    val imgx = ImgXImpl(false).add(DaadRedirectToImage(location!!))
+    val imgx = ImgXImpl(false).add(DaadRedirectToImage(location.toShort()))
     out.use {
         out.write(imgx.build())
     }
@@ -164,6 +166,16 @@ private fun getFile(filename: String, verb: String = "Reading"): File
         showError("ERROR: file not exists...")
     }
     return file
+}
+
+private fun checkNumericArg(value: String): Int
+{
+    val result = value.toIntOrNull()
+    if (result== null) {
+        throw RuntimeException("Argument is not numeric: $value")
+    } else {
+        return result
+    }
 }
 
 private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<ByteArray>

@@ -10,7 +10,6 @@ import org.nataliapc.imagewizard.screens.ColorType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import toHex
 import java.lang.RuntimeException
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream

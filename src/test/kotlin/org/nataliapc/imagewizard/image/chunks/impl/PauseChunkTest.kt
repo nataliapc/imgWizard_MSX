@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import toHex
 
 
 internal class PauseChunkTest {
