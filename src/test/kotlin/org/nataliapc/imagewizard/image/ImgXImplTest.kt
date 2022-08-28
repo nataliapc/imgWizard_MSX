@@ -11,7 +11,7 @@ import java.lang.RuntimeException
 internal class ImgXImplTest {
 
     private val buildValid = "IMGX".toByteArray() +
-            byteArrayOf(128u.toByte(), 3,0, 0,0, 1, 1,0) +
+            byteArrayOf(128u.toByte(), 10,0, 0,0, 1, 1,0, 0,0, 0,0, 0, 0, 0) +
             byteArrayOf(17, 0,0, 0,0)
 
     private lateinit var imgx: ImgX

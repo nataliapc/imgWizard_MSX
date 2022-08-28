@@ -2,7 +2,6 @@ package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.compressor.Compressor
-import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
@@ -37,7 +36,7 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
         }
     }
 
-    constructor(id: Int, compressedData: ByteArray, uncompressedSize: Int) : this(Compressor.Types.compressorById(id - ID_BASE)) {
+    constructor(id: Int, compressedData: ByteArray, uncompressedSize: Int) : this(Compressor.Types.byId(id - ID_BASE)) {
         this.compressedData = compressedData
         auxData = uncompressedSize
     }

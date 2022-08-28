@@ -4,6 +4,7 @@ import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.awt.Color
+import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
 import java.lang.RuntimeException
@@ -12,7 +13,7 @@ import kotlin.math.round
 
 interface ScreenMSX : ScreenRectangle, ScreenFullImage {
     fun fromFile(file: File): ScreenMSX
-    val colorType: ColorType
+    val pixelType: PixelType
     val paletteType: PaletteType
 }
 
@@ -36,9 +37,17 @@ class ScreenFactory {
 }
 
 enum class Chipset(val ramKb: Int) {
+    Unspecified(0),
+    TMS9918(16),
     V9938(128),
     V9958(128),
-    V9990(512)
+    V9990(512);
+
+    companion object {
+        fun byId(id: Int): Chipset {
+            return values()[id]
+        }
+    }
 }
 
 enum class Interlaced {
@@ -82,22 +91,29 @@ enum class ScreenModeType(
     B7_I(7,1024,424, Interlaced.Enabled)                                    // V9990 B7 Interlaced
 }
 
-enum class ColorType(val mask: Int) {
-    BP2(0b11),                  // 4 colors (2 bpp)
-    BP4(0b1111),                // 16 colors (4 bpp)
-    BP6(0b111111),              // 64 colors (6 bpp)
-    BD8(0xff),                  // 256 colors (GRB332)
-    BD16(0xffff),               // 32768 colors (GRB555)
-    BYJK(0xff),                 // 19268 colors (16 bpp)
-    BYJKP(0xff),                // 12599 colors + 16 paletted colors
-    BYUV(0xff),                 // 19268 colors
-    BYUVP(0xff);                // 12599 colors + 16 paletted colors
+enum class PixelType(val mask: Int, val indexed: Boolean) {
+    Unspecified(0, false),
+    BP2(0b11, true),            // 4 colors (2 bpp)
+    BP4(0b1111, true),          // 16 colors (4 bpp)
+    BP6(0b111111, true),        // 64 colors (6 bpp)
+    BD8(0xff, false),           // 256 colors (GRB332)
+    BD16(0xffff, false),        // 32768 colors (GRB555)
+    BYJK(0xff, false),          // 19268 colors (16 bpp)
+    BYJKP(0xff, false),         // 12599 colors + 16 paletted colors
+    BYUV(0xff, false),          // 19268 colors
+    BYUVP(0xff, false);         // 12599 colors + 16 paletted colors
 
     val bpp = mask.countOneBits()
+
+    companion object {
+        fun byId(id: Int): PixelType {
+            return values()[id]
+        }
+    }
 }
 
-enum class PaletteType(val bpp: Int, val rMask: Int, val gMask: Int, val bMask: Int) {
-    None(0, 0,0,0),
+enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: Int, private val bMask: Int) {
+    Unspecified(0, 0,0,0),
     GRB332(8, 0b00011100,0b11100000,0b00000011),
     GRB333(11, 0b00001110000,0b11100000000,0b00000000111),
     GRB555(15, 0b0000001111100000,0b0111110000000000,0b0000000000011111);
@@ -105,9 +121,17 @@ enum class PaletteType(val bpp: Int, val rMask: Int, val gMask: Int, val bMask: 
     private val rIni: Int = rMask.countTrailingZeroBits()
     private val gIni: Int = gMask.countTrailingZeroBits()
     private val bIni: Int = bMask.countTrailingZeroBits()
+    private val rMax: Int = rMask shr rIni
+    private val gMax: Int = gMask shr gIni
+    private val bMax: Int = bMask shr bIni
 
-    fun isIndexed() = bpp < 8
-    fun isByteSized() = bpp == 8
+    companion object {
+        fun byId(id: Int): PaletteType {
+            return values()[id]
+        }
+    }
+
+    fun isByteSized() = bpp <= 8
     fun isShortSized() = bpp <=16 && !isByteSized()
 
     fun fromRGB24(rgb: Int): Int {
@@ -117,54 +141,69 @@ enum class PaletteType(val bpp: Int, val rMask: Int, val gMask: Int, val bMask: 
 
     fun fromRGB24(red: Int, green: Int, blue: Int): Int {
         rMask.countLeadingZeroBits()
-        val r = round(red * (rMask shr rIni) / 255.0).toInt() shl rIni
-        val g = round(green * (gMask shr gIni) / 255.0).toInt() shl gIni
-        val b = round(blue * (bMask shr bIni) / 255.0).toInt() shl bIni
+        val r = round(red * rMax / 255.0).toInt() shl rIni
+        val g = round(green * gMax / 255.0).toInt() shl gIni
+        val b = round(blue * bMax / 255.0).toInt() shl bIni
         return r or g or b
     }
 
-    fun writeFromRGB24(rgb: Int, stream: DataOutputStream) {
-        if (isByteSized() || isIndexed()) {
-            stream.writeByte(fromRGB24(rgb))
-        } else
-        if (isShortSized()) {
-            stream.writeShortLE(fromRGB24(rgb))
-        } else {
-            throw RuntimeException("Unknown palette type")
+    fun toRGB24(value: Int): Int {
+        val r = round(((value and rMask) shr rIni) * 255.0 / rMax).toInt() shl 16
+        val g = round(((value and gMask) shr gIni) * 255.0 / gMax).toInt() shl 8
+        val b = round(((value and bMask) shr bIni) * 255.0 / bMax).toInt()
+        return r or g or b
+    }
+
+    fun writeFromRGB24(rgb: Int, stream: DataOutputStream, pixelType: PixelType) {
+        when {
+            isShortSized() -> stream.writeShortLE(fromRGB24(rgb))
+            isByteSized() -> stream.writeByte(if (pixelType.indexed) rgb else fromRGB24(rgb))
+            else -> throw RuntimeException("Unknown palette type to write")
+        }
+    }
+
+    fun readToRGB24(stream: DataInputStream, pixelType: PixelType): Int {
+        return when {
+            isShortSized() -> toRGB24(stream.readUnsignedShort())
+            isByteSized() -> {
+                val value = stream.readUnsignedByte()
+                if (pixelType.indexed) value else toRGB24(value)
+            }
+            else -> throw RuntimeException("Unknown palette type to read")
         }
     }
 }
 
 open class ScreenBitmapImpl(
     val screenMode: ScreenModeType,
-    final override val colorType: ColorType,
+    final override val pixelType: PixelType,
     final override val paletteType: PaletteType,
     final val chipset: Chipset = Chipset.V9990
 ) : ScreenBitmap {
 
-    class SC5 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BP4, PaletteType.GRB333, Chipset.V9938)
-    class SC6 : ScreenBitmapImpl(ScreenModeType.B3, ColorType.BP2, PaletteType.GRB333, Chipset.V9938)
-    class SC7 : ScreenBitmapImpl(ScreenModeType.B3, ColorType.BP4, PaletteType.GRB333, Chipset.V9938)
-    class SC8 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BD8, PaletteType.GRB332, Chipset.V9938)
-    class SC10 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BYJKP, PaletteType.GRB333, Chipset.V9958)
-    class SC12 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BYJK, PaletteType.None, Chipset.V9958)
-    class B1withBP4 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BP4, PaletteType.GRB555)
-    class B1withBD8 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BD8, PaletteType.GRB555)
-    class B1withBYUV : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BYUV, PaletteType.GRB555)
-    class B1withBD16 : ScreenBitmapImpl(ScreenModeType.B1, ColorType.BD16, PaletteType.GRB555)
-    class B3withBD16 : ScreenBitmapImpl(ScreenModeType.B3, ColorType.BD16, PaletteType.GRB555)
-    class B5withBD4 : ScreenBitmapImpl(ScreenModeType.B5, ColorType.BP4, PaletteType.GRB555)
-    class B6withBD4 : ScreenBitmapImpl(ScreenModeType.B6, ColorType.BP4, PaletteType.GRB555)
-    class B7withBD4 : ScreenBitmapImpl(ScreenModeType.B7, ColorType.BP4, PaletteType.GRB555)
-    class B7iwithBD4 : ScreenBitmapImpl(ScreenModeType.B7_I, ColorType.BP4, PaletteType.GRB555)
+    class SC5 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB333, Chipset.V9938)
+    class SC6 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP2, PaletteType.GRB333, Chipset.V9938)
+    class SC7 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP4, PaletteType.GRB333, Chipset.V9938)
+    class SC8 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD8, PaletteType.GRB332, Chipset.V9938)
+    class SC10 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYJKP, PaletteType.GRB333, Chipset.V9958)
+    class SC12 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYJK, PaletteType.Unspecified, Chipset.V9958)
+    class B1withBP4 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB555)
+    class B1withBD8 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD8, PaletteType.GRB555)
+    class B1withBYUV : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYUV, PaletteType.GRB555)
+    class B1withBD16 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD16, PaletteType.GRB555)
+    class B3withBD16 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BD16, PaletteType.GRB555)
+    class B5withBD4 : ScreenBitmapImpl(ScreenModeType.B5, PixelType.BP4, PaletteType.GRB555)
+    class B6withBD4 : ScreenBitmapImpl(ScreenModeType.B6, PixelType.BP4, PaletteType.GRB555)
+    class B7withBD4 : ScreenBitmapImpl(ScreenModeType.B7, PixelType.BP4, PaletteType.GRB555)
+    class B7iwithBD4 : ScreenBitmapImpl(ScreenModeType.B7_I, PixelType.BP4, PaletteType.GRB555)
 
     val maxVRAMsizeInBytes = chipset.ramKb * 1024
-    val screenSizeInBytes: Int = screenMode.width * screenMode.height * colorType.bpp / 8
+    val screenSizeInBytes: Int = screenMode.width * screenMode.height * pixelType.bpp / 8
     var maxScreenHeight: Int = screenSizeInBytes / screenMode.width
 
     init {
-        if (screenMode.mode >= 4 && colorType != ColorType.BP4 && colorType != ColorType.BP2) {
-            throw RuntimeException("Invalid Screen format: Not supported ${colorType.bpp}bpp for mode B${screenMode.mode}")
+        if (screenMode.mode >= 4 && pixelType != PixelType.BP4 && pixelType != PixelType.BP2) {
+            throw RuntimeException("Invalid Screen format: Not supported ${pixelType.bpp}bpp for mode B${screenMode.mode}")
         }
         if (screenSizeInBytes > maxVRAMsizeInBytes) {
             throw RuntimeException("Invalid Screen format: This mode oversized (${screenSizeInBytes/1024} Kb) max VRAM capacity (${maxVRAMsizeInBytes/1024} Kb)")
@@ -193,7 +232,7 @@ open class ScreenBitmapImpl(
     private fun calculateMaxScreenHeight() {
         maxScreenHeight = screenSizeInBytes / screenMode.width
         var pot = (Int.MAX_VALUE.countLeadingZeroBits() - maxScreenHeight.countLeadingZeroBits()).toDouble()
-        while (maxScreenHeight * screenMode.width * colorType.bpp / 8 <= maxVRAMsizeInBytes) {
+        while (maxScreenHeight * screenMode.width * pixelType.bpp / 8 <= maxVRAMsizeInBytes) {
             pot++
             maxScreenHeight = Math.pow(2.0, pot).toInt()
         }
@@ -202,6 +241,6 @@ open class ScreenBitmapImpl(
     }
 
     override fun toString(): String {
-        return "Screen width:${screenMode.width} height:${screenMode.height} (max:$maxScreenHeight) ${colorType.bpp}bpp ($screenSizeInBytes bytes) "
+        return "Screen width:${screenMode.width} height:${screenMode.height} (max:$maxScreenHeight) ${pixelType.bpp}bpp ($screenSizeInBytes bytes) "
     }
 }

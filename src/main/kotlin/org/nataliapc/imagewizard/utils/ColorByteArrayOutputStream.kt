@@ -1,11 +1,11 @@
 package org.nataliapc.imagewizard.utils
 
-import org.nataliapc.imagewizard.screens.ColorType
+import org.nataliapc.imagewizard.screens.PixelType
 import org.nataliapc.imagewizard.screens.PaletteType
 import java.lang.RuntimeException
 
 
-class ColorByteArrayOutputStream(val colorType: ColorType, val paletteType: PaletteType) : DataByteArrayOutputStream()
+class ColorByteArrayOutputStream(val pixelType: PixelType, val paletteType: PaletteType) : DataByteArrayOutputStream()
 {
     private val byteBits = 8
 
@@ -14,17 +14,17 @@ class ColorByteArrayOutputStream(val colorType: ColorType, val paletteType: Pale
 
     init {
         resetWrite()
-        if (colorType.bpp !in intArrayOf(2,4,8,16)) {
-            throw RuntimeException("ColorType ${colorType.bpp}bpp no supported")
+        if (pixelType.bpp !in intArrayOf(2,4,8,16)) {
+            throw RuntimeException("ColorType ${pixelType.bpp}bpp no supported")
         }
     }
 
     fun writeColor(value: Int) {
-        if (colorType.bpp == 16) {
+        if (pixelType.bpp == 16) {
             writeShortLE(paletteType.fromRGB24(value))
         } else {
-            lastBitWrited -= colorType.bpp
-            currentByte = currentByte or ((value and colorType.mask) shl lastBitWrited)
+            lastBitWrited -= pixelType.bpp
+            currentByte = currentByte or ((value and pixelType.mask) shl lastBitWrited)
             if (lastBitWrited == 0) {
                 writeByte(currentByte)
                 resetWrite()

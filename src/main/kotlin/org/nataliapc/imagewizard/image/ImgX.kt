@@ -1,6 +1,7 @@
 package org.nataliapc.imagewizard.image
 
 import org.nataliapc.imagewizard.image.chunks.Chunk
+import java.awt.image.BufferedImage
 
 interface ImgX
 {
@@ -11,5 +12,6 @@ interface ImgX
     fun removeLast(): ImgX
     fun chunkCount(): Int
     fun build(withInfoChunk: Boolean = true): ByteArray
+    fun render(): BufferedImage
     fun printInfo()
 }

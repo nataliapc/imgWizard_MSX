@@ -14,7 +14,7 @@ interface Compressor
         PLETTER(Pletter());
 
         companion object {
-            fun compressorById(id: Int): Compressor {
+            fun byId(id: Int): Compressor {
                 values().forEach {
                     if (it.instance.id == id) {
                         return it.instance

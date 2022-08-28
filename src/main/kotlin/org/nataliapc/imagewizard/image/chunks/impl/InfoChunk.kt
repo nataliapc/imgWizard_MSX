@@ -4,8 +4,10 @@ import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.screens.Chipset
+import org.nataliapc.imagewizard.screens.PixelType
+import org.nataliapc.imagewizard.screens.PaletteType
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
@@ -26,11 +28,16 @@ class InfoChunk : ChunkAbstractImpl(128)
 {
     private var infoVersion = 1
     private var chunkCount = 0
+    var originalWidth = 0
+    var originalHeight = 0
+    var pixelType = PixelType.Unspecified
+    var paletteType = PaletteType.Unspecified
+    var chipset = Chipset.Unspecified
 
     companion object : ChunkCompanion {
         override fun from(stream: DataInputStream): Chunk {
             val id = stream.readUnsignedByte()
-            stream.readUnsignedShortLE()                    // Skip length
+            stream.readUnsignedShortLE()
 
             val obj = InfoChunk()
             obj.checkId(id)
@@ -38,6 +45,11 @@ class InfoChunk : ChunkAbstractImpl(128)
             obj.auxData = stream.readUnsignedShortLE()
             obj.infoVersion = stream.readUnsignedByte()
             obj.chunkCount = stream.readUnsignedShortLE()
+            obj.originalWidth = stream.readUnsignedShortLE()
+            obj.originalHeight = stream.readUnsignedShortLE()
+            obj.pixelType = PixelType.byId(stream.readUnsignedByte())
+            obj.paletteType = PaletteType.byId(stream.readUnsignedByte())
+            obj.chipset = Chipset.byId(stream.readUnsignedByte())
 
             return obj
         }
@@ -55,12 +67,22 @@ class InfoChunk : ChunkAbstractImpl(128)
 
         out.writeByte(infoVersion)
         out.writeShortLE(chunkCount)
+        out.writeShortLE(originalWidth)
+        out.writeShortLE(originalHeight)
+        out.writeByte(pixelType.ordinal)
+        out.writeByte(paletteType.ordinal)
+        out.writeByte(chipset.ordinal)
 
         return ensemble(out.toByteArray())
     }
 
     override fun printInfo() {
         println("[${getId()}] Image Info v$infoVersion\n"+
-                "        Chunk count: $chunkCount")
+                "        Chunk count ...... $chunkCount\n"+
+                "        Original Width ... $originalWidth\n"+
+                "        Original Height .. $originalHeight\n"+
+                "        Pixel Type ....... ${pixelType.name}\n"+
+                "        Palette Type ..... ${paletteType.name}\n"+
+                "        Chipset Type ..... ${chipset.name}")
     }
 }

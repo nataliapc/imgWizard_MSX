@@ -1,8 +1,7 @@
 package org.nataliapc.imagewizard.image.chunks
 
-import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
+import org.nataliapc.imagewizard.image.chunks.impl.DaadClearWindow
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
@@ -17,10 +16,10 @@ abstract class ChunkAbstractImpl(private val id: Int): Chunk
         const val MAX_CHUNK_DATA_SIZE = 2043
 
         override fun from(stream: DataInputStream): Chunk {
-            val id = stream.readUnsignedByte()
+            stream.readUnsignedByte()
             val length = stream.readUnsignedShortLE()
             stream.readNBytes(2 + length)
-            return InfoChunk()
+            return DaadClearWindow()
         }
     }
 

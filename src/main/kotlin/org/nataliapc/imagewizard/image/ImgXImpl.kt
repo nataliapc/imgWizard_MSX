@@ -2,6 +2,9 @@ package org.nataliapc.imagewizard.image
 
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
+import org.nataliapc.imagewizard.screens.PixelType
+import org.nataliapc.imagewizard.screens.PaletteType
+import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
@@ -91,6 +94,34 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
         }
 
         return output.toByteArray()
+    }
+
+    override fun render(): BufferedImage {
+        var width = 256
+        var height = 212
+        var colorType = PixelType.BD8
+        var paletteType = PaletteType.GRB332
+
+        if (infoChunk != null) {
+            width = infoChunk!!.originalWidth
+            height = infoChunk!!.originalHeight
+            colorType = infoChunk!!.pixelType
+            paletteType = infoChunk!!.paletteType
+        } else {
+            println("*** Unable to obtain specific data from InfoChunk. Get defaults ***")
+        }
+
+        val img = ImageWrapperImpl.from(
+            BufferedImage(width, height, BufferedImage.TYPE_INT_RGB),
+            colorType,
+            paletteType)
+
+        chunks.forEach {
+            it.printInfo()
+            img.render(it)
+        }
+
+        return img.getImageCopy()
     }
 
     override fun printInfo() {

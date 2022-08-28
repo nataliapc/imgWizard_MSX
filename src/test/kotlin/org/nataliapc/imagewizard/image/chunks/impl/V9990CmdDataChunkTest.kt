@@ -6,7 +6,7 @@ import org.nataliapc.imagewizard.compressor.Pletter
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
-import org.nataliapc.imagewizard.screens.ColorType
+import org.nataliapc.imagewizard.screens.PixelType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
@@ -39,7 +39,7 @@ internal class V9990CmdDataChunkTest {
         val stream = DataByteArrayOutputStream()
         ImageIO.write(bufimg, "png", stream)
         val inStream = ByteArrayInputStream(stream.toByteArray())
-        val image = ImageWrapperImpl.from(inStream, colorType = ColorType.BD16)
+        val image = ImageWrapperImpl.from(inStream, pixelType = PixelType.BD16)
 
         val result = V9990CmdDataChunk.fromRectangle(image,0,0,2,2, Raw())
 
