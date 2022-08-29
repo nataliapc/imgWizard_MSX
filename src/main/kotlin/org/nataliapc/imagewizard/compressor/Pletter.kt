@@ -36,19 +36,19 @@ class Pletter : CompressorImpl(2)
     private val undefined: Int = -1
 
     private var d = ByteArray(0)
-    private lateinit var m : MutableList<Metadata>
+    private lateinit var m : Array<Metadata>
     private var sourceSize: Int = 0
 
     // Cost of coding a constant
     private var varcost = IntArray(65536)
 
-    private var p = ArrayList<Array<Pakdata>>()
+    private lateinit var p: Array<Array<Pakdata>>
     private var s = Saves()
 
     private var savelength: Int = 0
 
     // Maximum offset for each mode
-    private val maxlen = arrayListOf(
+    private val maxlen = intArrayOf(
         128,
         128 + 128,
         512 + 128,
@@ -77,8 +77,9 @@ class Pletter : CompressorImpl(2)
         var minlen = sourceSize * 1000
         var minbl = 0
         var l: Int
+        p = Array(8) { Array(0) { Pakdata() } }
         for (i in 0 until 7) {
-            p.add(i, Array(sourceSize + 1) { Pakdata() })
+            p[i] = Array(sourceSize + 1) { Pakdata() }
             l = getlen(p[i], i)
             if (l < minlen && i != 0) {
                 minlen = l
@@ -92,7 +93,7 @@ class Pletter : CompressorImpl(2)
     {
         sourceSize = data.size
         d = ByteArray(sourceSize + 1) { i -> data.getOrElse(i) { 0 } }
-        m = MutableList(sourceSize + 1) { Metadata() }
+        m = Array(sourceSize + 1) { Metadata() }
     }
 
     // Inits output buffer
@@ -672,7 +673,7 @@ class Pletter : CompressorImpl(2)
             b.rl()                              // rl b
             mode5()
         }
-        val modes = arrayListOf({ offsak() }, { mode2() }, { mode3() }, { mode4() }, { mode5() }, { mode6() })
+        val modes = arrayOf({ offsak() }, { mode2() }, { mode3() }, { mode4() }, { mode5() }, { mode6() })
 
         a.ld(data[hl.get()])                    // ld a,(hl)
         hl.inc()                                // inc hl

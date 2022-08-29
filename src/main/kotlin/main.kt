@@ -35,6 +35,7 @@ fun main(args: Array<String>)
     if (args.isEmpty()) {
         showHelp()
     } else {
+        val time1 = System.currentTimeMillis()
         when (args[0].lowercase()) {
             "l" -> cmdL_ListContent(args)
 //            "c", "cl" -> cmdCL_CreateImageIMx(args)
@@ -47,6 +48,10 @@ fun main(args: Array<String>)
 //            "ca" -> cmd5A_TransformSC12toSC10(args)
             "v" -> cmdV_ViewImageIMx(args)
             else -> showHelp()
+        }
+        if (verbose) {
+            val time2 = System.currentTimeMillis()
+            println("Time elapsed: ${"%.2f sec".format((time2-time1)/1000.0)}")
         }
     }
 }
