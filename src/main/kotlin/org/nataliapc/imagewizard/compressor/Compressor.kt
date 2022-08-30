@@ -11,7 +11,8 @@ interface Compressor
     enum class Types(val instance: Compressor) {
         RAW(Raw()),
         RLE(Rle()),
-        PLETTER(Pletter());
+        PLETTER(Pletter()),
+        PLETTEREXT(PletterExtern());
 
         companion object {
             fun byId(id: Int): Compressor {
