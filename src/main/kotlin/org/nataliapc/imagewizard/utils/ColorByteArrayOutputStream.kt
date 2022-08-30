@@ -20,15 +20,21 @@ class ColorByteArrayOutputStream(val pixelType: PixelType, val paletteType: Pale
     }
 
     fun writeColor(value: Int) {
-        if (pixelType.bpp == 16) {
-            writeShortLE(paletteType.fromRGB24(value))
-        } else {
-            lastBitWrited -= pixelType.bpp
-            currentByte = currentByte or ((value and pixelType.mask) shl lastBitWrited)
-            if (lastBitWrited == 0) {
-                writeByte(currentByte)
-                resetWrite()
+        when {
+            paletteType.isShortSized() -> writeShortLE(paletteType.fromRGB24(value))
+            paletteType.isByteSized() -> {
+                if (!pixelType.indexed) {
+                    writeByte(paletteType.fromRGB24(value))
+                } else {
+                    lastBitWrited -= pixelType.bpp
+                    currentByte = currentByte or ((value and pixelType.mask) shl lastBitWrited)
+                    if (lastBitWrited == 0) {
+                        writeByte(currentByte)
+                        resetWrite()
+                    }
+                }
             }
+            else -> throw RuntimeException("Unexpected write Color ($value) for ${paletteType.name} ${pixelType.name}")
         }
     }
 

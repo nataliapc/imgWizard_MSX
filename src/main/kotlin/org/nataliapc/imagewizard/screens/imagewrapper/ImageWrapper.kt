@@ -46,7 +46,7 @@ interface ImageWrapper: ScreenRectangle, ScreenFullImage
 class ImageWrapperImpl private constructor(): ImageWrapper
 {
     private lateinit var image: BufferedImage
-    var colorType = defaultColorType
+    var pixelType = defaultPixelType
         private set
     var paletteType = defaultPaletteType
         private set
@@ -57,24 +57,24 @@ class ImageWrapperImpl private constructor(): ImageWrapper
 
     companion object
     {
-        private val defaultColorType = PixelType.BD8
+        private val defaultPixelType = PixelType.BD8
         private val defaultPaletteType = PaletteType.GRB555
 
         fun from(file:File, screen: ScreenBitmap): ImageWrapper {
             return from(file, screen.pixelType, screen.paletteType)
         }
 
-        fun from(file: File, pixelType: PixelType = defaultColorType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
+        fun from(file: File, pixelType: PixelType = defaultPixelType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
             return from(file.inputStream(), pixelType, paletteType)
         }
 
-        fun from(stream: InputStream, pixelType: PixelType = defaultColorType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
+        fun from(stream: InputStream, pixelType: PixelType = defaultPixelType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
             return from(ImageIO.read(stream), pixelType, paletteType)
         }
 
-        fun from(image: BufferedImage, pixelType: PixelType = defaultColorType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
+        fun from(image: BufferedImage, pixelType: PixelType = defaultPixelType, paletteType: PaletteType = defaultPaletteType): ImageWrapper {
             val obj = ImageWrapperImpl()
-            obj.colorType = pixelType
+            obj.pixelType = pixelType
             obj.paletteType = paletteType
 
             obj.image = image
@@ -86,7 +86,7 @@ class ImageWrapperImpl private constructor(): ImageWrapper
     override fun isTrueColor() = !isIndexed()
 
     override fun setOutputFormat(pixelType: PixelType, paletteType: PaletteType) {
-        this.colorType = pixelType
+        this.pixelType = pixelType
         this.paletteType = paletteType
     }
 
@@ -94,9 +94,9 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         val out = DataByteArrayOutputStream()
 
         getOriginalPalette().forEach {
-            paletteType.writeFromRGB24(it, out, colorType)
+            paletteType.writeFromRGB24(it, out, pixelType)
         }
-        val paletteSize = (2.0.pow(colorType.bpp.toDouble()) * round((paletteType.bpp + 7) / 8.0)).toInt()
+        val paletteSize = (2.0.pow(pixelType.bpp.toDouble()) * round((paletteType.bpp + 7) / 8.0)).toInt()
         val palette = out.toByteArray().copyOf(paletteSize)
         out.close()
 
@@ -128,8 +128,8 @@ class ImageWrapperImpl private constructor(): ImageWrapper
             }
         }
 
-        val out = ColorByteArrayOutputStream(colorType, paletteType)
-        val palette = if (isIndexed()) { getOriginalPalette() } else { null }
+        val out = ColorByteArrayOutputStream(pixelType, paletteType)
+        val palette = if (pixelType.indexed) { getOriginalPalette() } else { null }
         intArray.forEach {
             out.writeColor(palette?.indexOf(it) ?: it)
         }
