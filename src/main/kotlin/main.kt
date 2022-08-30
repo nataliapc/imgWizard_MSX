@@ -1,4 +1,5 @@
 import org.nataliapc.imagewizard.compressor.Compressor
+import org.nataliapc.imagewizard.compressor.Pletter.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.DaadRedirectToImage
@@ -245,6 +246,7 @@ private fun checkNumericArg(value: String): Int
 
 private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<ByteArray>
 {
+    val maxSize = MAX_SIZE_UNCOMPRESSED
     val out = arrayListOf<ByteArray>()
     var start = 0
     var end: Int
@@ -254,10 +256,14 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
 
     while (start < dataIn.size) {
         end = dataIn.size
+        if (end-start > maxSize) {
+            end = start + maxSize
+        }
         lastEnd = start
         do {
             dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
             if (verbose) print("\r\tChunk size: ${end-start} -> ${dataCompressed.size} [${end*100/dataIn.size}%] ")
+            if (end-start == maxSize && dataCompressed.size <= MAX_CHUNK_DATA_SIZE) break
             if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= MAX_CHUNK_DATA_SIZE-1) break
             if (dataCompressed.size >= MAX_CHUNK_DATA_SIZE-2 && dataCompressed.size <= MAX_CHUNK_DATA_SIZE) break
             aux = end

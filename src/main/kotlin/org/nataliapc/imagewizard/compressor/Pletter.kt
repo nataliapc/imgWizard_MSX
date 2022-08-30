@@ -31,7 +31,7 @@ class Pletter : CompressorImpl(2)
     }
 
     private class Saves {
-        var buf = ByteArray(0)
+        var buf = UByteArray(0)
         var ep: Int = 0
         var dp: Int = 0
         var p: Int = 0
@@ -40,7 +40,7 @@ class Pletter : CompressorImpl(2)
 
     private val undefined: Int = -1
 
-    private var d = ByteArray(0)
+    private var d = UByteArray(0)
     private lateinit var m : Array<Metadata>
     private var sourceSize: Int = 0
 
@@ -61,13 +61,13 @@ class Pletter : CompressorImpl(2)
         2048 + 128,
         4096 + 128,
         8192 + 128
-    )
+    ).toUIntArray()
 
     override fun compress(data: ByteArray): ByteArray
     {
-        var result: ByteArray = byteArrayOf()
+        var result: UByteArray = ubyteArrayOf()
         try {
-            loadfile(data)
+            loadfile(data.toUByteArray())
             initvarcost()
             createMetadata()
             val minbl = createPakdata()
@@ -75,7 +75,7 @@ class Pletter : CompressorImpl(2)
         } catch(e: Exception) {
             e.printStackTrace()
         }
-        return result
+        return result.toByteArray()
     }
 
     private fun createPakdata(): Int {
@@ -94,10 +94,10 @@ class Pletter : CompressorImpl(2)
         return minbl
     }
 
-    private fun loadfile(data: ByteArray)
+    private fun loadfile(data: UByteArray)
     {
         sourceSize = data.size
-        d = ByteArray(sourceSize + 1) { i -> data.getOrElse(i) { 0 } }
+        d = UByteArray(sourceSize + 1) { i -> data.getOrElse(i) { 0u } }
         m = Array(sourceSize + 1) { Metadata() }
     }
 
@@ -108,7 +108,7 @@ class Pletter : CompressorImpl(2)
         s.dp = 0
         s.p = 0
         s.e = 0
-        s.buf = ByteArray(sourceSize * 2)
+        s.buf = UByteArray(sourceSize * 2)
     }
 
     // Adds a zero bit to output
@@ -181,7 +181,7 @@ class Pletter : CompressorImpl(2)
     }
 
     // Add a data to output
-    private fun adddata(d: Byte)
+    private fun adddata(d: UByte)
     {
         s.buf[s.dp++] = d
     }
@@ -189,7 +189,7 @@ class Pletter : CompressorImpl(2)
     // Dump bits buffer
     private fun addevent()
     {
-        s.buf[s.ep] = s.e.toByte()
+        s.buf[s.ep] = s.e.toUByte()
         s.p = 0
         s.e = 0
     }
@@ -202,7 +202,7 @@ class Pletter : CompressorImpl(2)
     }
 
     // Fill to zeros and save final file
-    private fun done(): ByteArray
+    private fun done(): UByteArray
     {
         if (s.p != 0) {
             while (s.p != 8) {
@@ -264,7 +264,7 @@ class Pletter : CompressorImpl(2)
         r = undefined
         t = 0
         for (i in sourceSize -1 downTo 0) {
-            if (d[i] == r.toByte()) {
+            if (d[i] == r.toUByte()) {
                 m[i].reeks = (++t)
             } else {
                 r = d[i].toInt()
@@ -288,9 +288,10 @@ class Pletter : CompressorImpl(2)
                 }
 
                 // For each repeated string
+//TODO optimize while loop
                 while (prev[p] != undefined) {
                     p = prev[p]
-                    if (i - p > maxlen[bl]) {   // Exceeded possible offset?
+                    if ((i - p).toUInt() > maxlen[bl]) {   // Exceeded possible offset?
                         break                 // Yes, finish
                     }
                     l = 0
@@ -376,15 +377,15 @@ class Pletter : CompressorImpl(2)
     }
 
     // Save the compressed file
-    private fun save(p: Array<Pakdata>, mode: Int): ByteArray
+    private fun save(p: Array<Pakdata>, mode: Int): UByteArray
     {
         var i = 1
         var j: Int
 
         init()
         if (savelength != 0) {
-            adddata((sourceSize and 255).toByte())
-            adddata((sourceSize shr 8).toByte())
+            adddata((sourceSize and 255).toUByte())
+            adddata((sourceSize shr 8).toUByte())
         }
         add3(mode - 1)
         adddata(d[0])
@@ -399,14 +400,14 @@ class Pletter : CompressorImpl(2)
                     add1()
                     addvar(p[i].mlen - 1)
                     j = m[i].cpos[0] - 1
-                    adddata(j.toByte())
+                    adddata(j.toUByte())
                     i += p[i].mlen
                 }
                 2 -> {      // Long offset
                     add1()
                     addvar(p[i].mlen - 1)
                     j = m[i].cpos[mode] - 1
-                    adddata((128 or (j and 127)).toByte())
+                    adddata((128 or (j and 127)).toUByte())
                     j -= 128
                     if (mode == 6) addbit(j and 4096)
                     if (mode == 5) addbit(j and 2048)
