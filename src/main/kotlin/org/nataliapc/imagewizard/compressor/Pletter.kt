@@ -25,7 +25,7 @@ class Pletter : CompressorImpl(2)
 
     // Compression per byte for each mode
     private class Pakdata {
-        var cost: Int = 0
+        var cost: UInt = 0u
         var mode: Int = 0
         var mlen: Int = 0
     }
@@ -38,14 +38,14 @@ class Pletter : CompressorImpl(2)
         var e: Int = 0
     }
 
-    private val undefined: Int = -1
+    private val undefined: Int = Int.MAX_VALUE
 
     private var d = UByteArray(0)
     private lateinit var m : Array<Metadata>
     private var sourceSize: Int = 0
 
     // Cost of coding a constant
-    private var varcost = IntArray(65536)
+    private var varcost = UIntArray(65536)
 
     private lateinit var p: Array<Array<Pakdata>>
     private var s = Saves()
@@ -229,7 +229,7 @@ class Pletter : CompressorImpl(2)
         while (r != 65536) {
             j = 0
             while (j != r) {
-                varcost[v++] = b
+                varcost[v++] = b.toUInt()
                 ++j
             }
             b += 2
@@ -256,8 +256,8 @@ class Pletter : CompressorImpl(2)
         for (i in 0 until sourceSize) {
             m[i].cpos[0] = 0
             m[i].clen[0] = 0
-            prev[i] = last[d[i].toUByte().toInt() or (d[i + 1].toUByte().toInt() shl 8)]
-            last[d[i].toUByte().toInt() or (d[i + 1].toUByte().toInt() shl 8 )] = i
+            prev[i] = last[d[i].toInt() or (d[i + 1].toInt() shl 8)]
+            last[d[i].toInt() or (d[i + 1].toInt() shl 8 )] = i
         }
 
         // Counts the bytes repeated from each starting position
@@ -332,19 +332,19 @@ class Pletter : CompressorImpl(2)
         var kmode: Int
         var kl: Int
 
-        p[sourceSize].cost = 0
+        p[sourceSize].cost = 0u
 
         // Trick: goes from onwards to backwards, this way can know all
         // possible combinations for compressing.
         for (i in sourceSize - 1 downTo 0) {
             kmode = 0   // Literal
             kl = 0
-            kc = (9 + p[i + 1].cost)
+            kc = (9u + p[i + 1].cost).toInt()
 
             // Test every size until getting the most short
             j = m[i].clen[0]
             while (j > 1) {
-                cc = (9 + varcost[j - 1] + p[i + j].cost)
+                cc = (9u + varcost[j - 1] + p[i + j].cost).toInt()
                 if (cc < kc) {
                     kc = cc
                     kmode = 1      // Short offset
@@ -361,7 +361,7 @@ class Pletter : CompressorImpl(2)
                 0
             }
             while (j > 1) {
-                cc = ccc + (varcost[j - 1] + p[i + j].cost)
+                cc = ccc + (varcost[j - 1] + p[i + j].cost).toInt()
                 if (cc < kc) {
                     kc = cc
                     kmode = 2      // Long offset
@@ -369,11 +369,11 @@ class Pletter : CompressorImpl(2)
                 }
                 --j
             }
-            p[i].cost = kc
+            p[i].cost = kc.toUInt()
             p[i].mode = kmode
             p[i].mlen = kl
         }
-        return p[0].cost
+        return p[0].cost.toInt()
     }
 
     // Save the compressed file
@@ -430,10 +430,10 @@ class Pletter : CompressorImpl(2)
     // ************************************************************************
     // Based on pletter v0.5c ASM MSX unpacker
 
-    object stack {
-        val pila = Stack<Int>()
-        fun push(reg: Reg16) { pila.push(reg.get()) }
-        fun pop(reg: Reg16) { reg.ld(pila.pop()) }
+    object Z80stack {
+        private val stack = Stack<Int>()
+        fun push(reg: Reg16) { stack.push(reg.get()) }
+        fun pop(reg: Reg16) { reg.ld(stack.pop()) }
     }
     class Reg8() {
         private var reg8 = 0
@@ -632,15 +632,15 @@ class Pletter : CompressorImpl(2)
         }
         fun offsak() {
             bc.inc()                            // inc bc
-            stack.push(hl)                      // push hl
+            Z80stack.push(hl)                   // push hl
             exx()                               // exx
-            stack.push(hl)                      // push hl
+            Z80stack.push(hl)                   // push hl
             exx()                               // exx
             hl.ld(de)                           // ld l,e | ld h,d
             hl.sbc(bc)                          // sbc hl,bc
-            stack.pop(bc)                       // pop bc
+            Z80stack.pop(bc)                    // pop bc
             ldir()                              // ldir
-            stack.pop(hl)                       // pop hl
+            Z80stack.pop(hl)                    // pop hl
         }
         fun mode2() {
             a.add(a)                            // add a,a
@@ -651,7 +651,7 @@ class Pletter : CompressorImpl(2)
             if (Reg8.carryFlag) {               // jr nc,offsok
                 a.or(a)                         // or a
                 b.inc()                         // inc b
-                c.res(7)                    // res 7, c
+                c.res(7)                        // res 7, c
             }
             offsak()
         }
@@ -684,7 +684,7 @@ class Pletter : CompressorImpl(2)
         a.ld(data[hl.get()])                    // ld a,(hl)
         hl.inc()                                // inc hl
         exx()                                   // exx
-        de.ld(0)                          // ld de, 0
+        de.ld(0)                                // ld de, 0
         a.add(a)                                // add a, a
         a.inc()                                 // inc a
         e.rl()                                  // rl  e
@@ -693,10 +693,10 @@ class Pletter : CompressorImpl(2)
         a.add(a)                                // add a, a
         e.rl()                                  // rl  e
         e.rl()                                  // rl  e
-        hl.ld(0)                          // ld hl, modes
+        hl.ld(0)                                // ld hl, modes
         hl.add(de)                              // add hl, de
         ix.ld(hl.get()/2)
-        e.ld(1)                           // ld e, 1
+        e.ld(1)                                 // ld e, 1
         exx()                                   // exx
         // iy.ld(loop)
 //literal:
@@ -737,8 +737,8 @@ class Pletter : CompressorImpl(2)
             exx()                               // exx
             c.ld(data[hl.get()])                // ld c, (hl)
             hl.inc()                            // inc hl
-            b.ld(0)                       // ld b, #0
-            c.bit(7)                        // bit 7,c
+            b.ld(0)                             // ld b, #0
+            c.bit(7)                            // bit 7,c
             if (Reg8.zeroFlag)
                 offsak()                        // jp z,offsok
             else

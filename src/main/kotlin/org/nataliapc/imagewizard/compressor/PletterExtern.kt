@@ -4,7 +4,7 @@ import java.io.BufferedReader
 import java.io.File
 import java.io.StringReader
 
-class PletterExtern : CompressorImpl(130)
+class PletterExtern : CompressorImpl(2)
 {
     override fun compress(data: ByteArray): ByteArray {
         val fileIn = File.createTempFile("pletterIn", ".tmp")
