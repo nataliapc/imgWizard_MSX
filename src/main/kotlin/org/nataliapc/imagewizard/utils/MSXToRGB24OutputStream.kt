@@ -1,7 +1,7 @@
 package org.nataliapc.imagewizard.utils
 
-import org.nataliapc.imagewizard.screens.PaletteType
-import org.nataliapc.imagewizard.screens.PixelType
+import org.nataliapc.imagewizard.screens.enums.PaletteType
+import org.nataliapc.imagewizard.screens.enums.PixelType
 import java.lang.RuntimeException
 
 class MSXToRGB24OutputStream(private val pixelType: PixelType, private val paletteType: PaletteType) : DataByteArrayOutputStream()

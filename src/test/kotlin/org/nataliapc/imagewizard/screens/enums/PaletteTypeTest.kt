@@ -1,9 +1,10 @@
-package org.nataliapc.imagewizard.screens
+package org.nataliapc.imagewizard.screens.enums
 
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Disabled
+import org.nataliapc.imagewizard.screens.enums.PaletteType
 
 
 internal class PaletteTypeTest {

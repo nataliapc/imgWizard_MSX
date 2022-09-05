@@ -1,7 +1,7 @@
 package org.nataliapc.imagewizard.utils
 
-import org.nataliapc.imagewizard.screens.PixelType
-import org.nataliapc.imagewizard.screens.PaletteType
+import org.nataliapc.imagewizard.screens.enums.PixelType
+import org.nataliapc.imagewizard.screens.enums.PaletteType
 import java.lang.RuntimeException
 
 

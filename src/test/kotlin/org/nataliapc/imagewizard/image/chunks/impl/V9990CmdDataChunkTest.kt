@@ -6,7 +6,7 @@ import org.nataliapc.imagewizard.compressor.Pletter
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
-import org.nataliapc.imagewizard.screens.PixelType
+import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream

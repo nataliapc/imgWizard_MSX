@@ -1,9 +1,9 @@
-package org.nataliapc.imagewizard.screens
+package org.nataliapc.imagewizard.screens.enums
 
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
-import org.nataliapc.imagewizard.screens.PixelType.*
+import org.nataliapc.imagewizard.screens.enums.PixelType.*
 
 
 internal class PixelTypeTest {

@@ -4,16 +4,13 @@ import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk.Command
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk.LogicalOp
-import org.nataliapc.imagewizard.screens.Chipset
-import org.nataliapc.imagewizard.screens.PixelType
-import org.nataliapc.imagewizard.screens.PaletteType
+import org.nataliapc.imagewizard.screens.enums.Chipset
+import org.nataliapc.imagewizard.screens.enums.PixelType
+import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
-import org.nataliapc.imagewizard.utils.RGB24ToMSXOutputStream
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.MSXToRGB24OutputStream
+import org.nataliapc.imagewizard.utils.*
 import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.Rectangle
@@ -161,7 +158,7 @@ class ImageWrapperImpl private constructor(): ImageWrapper
 }
 
 object ImageRender {
-    private var colorType = PixelType.BD8
+    private var pixelType = PixelType.BD8
     private var paletteType = PaletteType.GRB332
     private var chipset = Chipset.V9938
 
@@ -170,7 +167,7 @@ object ImageRender {
     private var dataOutput = DataByteArrayOutputStream()
 
     fun reset(pixelType: PixelType, paletteType: PaletteType, chipset: Chipset = Chipset.Unspecified) {
-        this.colorType = pixelType
+        this.pixelType = pixelType
         this.paletteType = paletteType
         this.chipset = chipset
     }
@@ -228,15 +225,15 @@ object ImageRender {
     }
 
     private fun checkEndData(): Boolean {
-        return dataOutput.size() >= ceil(dataRect.width * dataRect.height * colorType.bpp / 8.0).toInt()
+        return dataOutput.size() >= ceil(dataRect.width * dataRect.height * pixelType.bpp / 8.0).toInt()
     }
 
     private fun convertData(data: DataByteArrayOutputStream): IntArray {
-        val inputStream = DataByteArrayInputStream(data.toByteArray())
+        val inputStream = MSXToRGB24InputStream(data.toByteArray(), pixelType, paletteType)
         val out = ArrayList<Int>(0)
         inputStream.use { inStream ->
             while (inStream.available() > 0) {
-                val color = Color(paletteType.readToRGB24(inStream, colorType), false)
+                val color = Color(inputStream.readColor(), false)
                 out.add(color.rgb)
             }
         }

@@ -4,9 +4,9 @@ import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
-import org.nataliapc.imagewizard.screens.Chipset
-import org.nataliapc.imagewizard.screens.PixelType
-import org.nataliapc.imagewizard.screens.PaletteType
+import org.nataliapc.imagewizard.screens.enums.Chipset
+import org.nataliapc.imagewizard.screens.enums.PixelType
+import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE

@@ -6,9 +6,9 @@ import org.nataliapc.imagewizard.image.chunks.impl.DaadRedirectToImage
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdDataChunk
-import org.nataliapc.imagewizard.screens.Chipset
-import org.nataliapc.imagewizard.screens.PixelType
-import org.nataliapc.imagewizard.screens.PaletteType
+import org.nataliapc.imagewizard.screens.enums.Chipset
+import org.nataliapc.imagewizard.screens.enums.PixelType
+import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.utils.toHex
