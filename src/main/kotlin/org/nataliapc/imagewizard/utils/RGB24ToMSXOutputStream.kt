@@ -21,8 +21,8 @@ class RGB24ToMSXOutputStream(private val pixelType: PixelType, private val palet
 
     fun writeColor(rgb24: Int) {
         when {
-            paletteType.isShortSized() -> writeShortLE(paletteType.toColorMSX(rgb24))
-            paletteType.isByteSized() -> {
+            pixelType.isShortSized() -> writeShortLE(paletteType.toColorMSX(rgb24))
+            pixelType.isByteSized() -> {
                 if (!pixelType.indexed) {
                     writeByte(paletteType.toColorMSX(rgb24))
                 } else {
@@ -50,4 +50,8 @@ class RGB24ToMSXOutputStream(private val pixelType: PixelType, private val palet
         lastBitWrited = byteBits
     }
 
+    override fun close() {
+        writeFlush()
+        super.close()
+    }
 }

@@ -131,11 +131,9 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         intArray.forEach {
             out.writeColor(palette?.indexOf(it) ?: it)
         }
-        out.writeFlush()
-
-        val result = out.toByteArray()
         out.close()
-        return result
+
+        return out.toByteArray()
     }
 
     override fun render(chunk: Chunk) {
