@@ -5,7 +5,7 @@ import org.nataliapc.imagewizard.screens.PaletteType
 import java.lang.RuntimeException
 
 
-class ColorByteArrayOutputStream(val pixelType: PixelType, val paletteType: PaletteType) : DataByteArrayOutputStream()
+class RGB24ToMSXOutputStream(private val pixelType: PixelType, private val paletteType: PaletteType) : DataByteArrayOutputStream()
 {
     private val byteBits = 8
 
@@ -19,22 +19,22 @@ class ColorByteArrayOutputStream(val pixelType: PixelType, val paletteType: Pale
         }
     }
 
-    fun writeColor(value: Int) {
+    fun writeColor(rgb24: Int) {
         when {
-            paletteType.isShortSized() -> writeShortLE(paletteType.fromRGB24(value))
+            paletteType.isShortSized() -> writeShortLE(paletteType.toColorMSX(rgb24))
             paletteType.isByteSized() -> {
                 if (!pixelType.indexed) {
-                    writeByte(paletteType.fromRGB24(value))
+                    writeByte(paletteType.toColorMSX(rgb24))
                 } else {
                     lastBitWrited -= pixelType.bpp
-                    currentByte = currentByte or ((value and pixelType.mask) shl lastBitWrited)
+                    currentByte = currentByte or ((rgb24 and pixelType.mask) shl lastBitWrited)
                     if (lastBitWrited == 0) {
                         writeByte(currentByte)
                         resetWrite()
                     }
                 }
             }
-            else -> throw RuntimeException("Unexpected write Color ($value) for ${paletteType.name} ${pixelType.name}")
+            else -> throw RuntimeException("Unexpected write Color ($rgb24) for ${paletteType.name} ${pixelType.name}")
         }
     }
 

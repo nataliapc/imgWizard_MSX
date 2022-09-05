@@ -10,9 +10,10 @@ import org.nataliapc.imagewizard.screens.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
-import org.nataliapc.imagewizard.utils.ColorByteArrayOutputStream
+import org.nataliapc.imagewizard.utils.RGB24ToMSXOutputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
+import org.nataliapc.imagewizard.utils.MSXToRGB24OutputStream
 import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.Rectangle
@@ -91,10 +92,10 @@ class ImageWrapperImpl private constructor(): ImageWrapper
     }
 
     override fun getFinalPalette(): ByteArray {
-        val out = DataByteArrayOutputStream()
+        val out = RGB24ToMSXOutputStream(pixelType, paletteType)
 
         getOriginalPalette().forEach {
-            paletteType.writeFromRGB24(it, out, pixelType)
+            out.writeColor(it)
         }
         val paletteSize = (2.0.pow(pixelType.bpp.toDouble()) * round((paletteType.bpp + 7) / 8.0)).toInt()
         val palette = out.toByteArray().copyOf(paletteSize)
@@ -128,7 +129,7 @@ class ImageWrapperImpl private constructor(): ImageWrapper
             }
         }
 
-        val out = ColorByteArrayOutputStream(pixelType, paletteType)
+        val out = RGB24ToMSXOutputStream(pixelType, paletteType)
         val palette = if (pixelType.indexed) { getOriginalPalette() } else { null }
         intArray.forEach {
             out.writeColor(palette?.indexOf(it) ?: it)

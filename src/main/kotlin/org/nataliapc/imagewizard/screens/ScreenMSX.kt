@@ -134,12 +134,12 @@ enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: 
     fun isByteSized() = bpp <= 8
     fun isShortSized() = bpp <=16 && !isByteSized()
 
-    fun fromRGB24(rgb: Int): Int {
+    fun toColorMSX(rgb: Int): Int {
         val color = Color(rgb)
-        return fromRGB24(color.red, color.green, color.blue)
+        return toColorMSX(color.red, color.green, color.blue)
     }
 
-    fun fromRGB24(red: Int, green: Int, blue: Int): Int {
+    fun toColorMSX(red: Int, green: Int, blue: Int): Int {
         rMask.countLeadingZeroBits()
         val r = round(red * rMax / 255.0).toInt() shl rIni
         val g = round(green * gMax / 255.0).toInt() shl gIni
@@ -152,14 +152,6 @@ enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: 
         val g = round(((value and gMask) shr gIni) * 255.0 / gMax).toInt() shl 8
         val b = round(((value and bMask) shr bIni) * 255.0 / bMax).toInt()
         return r or g or b
-    }
-
-    fun writeFromRGB24(rgb: Int, stream: DataOutputStream, pixelType: PixelType) {
-        when {
-            isShortSized() -> stream.writeShortLE(fromRGB24(rgb))
-            isByteSized() -> stream.writeByte(if (pixelType.indexed) rgb else fromRGB24(rgb))
-            else -> throw RuntimeException("Unknown palette type to write")
-        }
     }
 
     fun readToRGB24(stream: DataInputStream, pixelType: PixelType): Int {

@@ -24,9 +24,9 @@ internal class PaletteTypeTest {
 
     @Test
     fun fromRGB24_Ok() {
-        assertEquals(0b10011001, PaletteType.GRB332.fromRGB24(0xffcc8844u.toInt()))
-        assertEquals(0b10001100010, PaletteType.GRB333.fromRGB24(0xffcc8844u.toInt()))
-        assertEquals(0b100011100101000, PaletteType.GRB555.fromRGB24(0xffcc8844u.toInt()))
+        assertEquals(0b10011001, PaletteType.GRB332.toColorMSX(0xffcc8844u.toInt()))
+        assertEquals(0b10001100010, PaletteType.GRB333.toColorMSX(0xffcc8844u.toInt()))
+        assertEquals(0b100011100101000, PaletteType.GRB555.toColorMSX(0xffcc8844u.toInt()))
     }
 
     @Test
