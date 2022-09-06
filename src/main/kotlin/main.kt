@@ -260,7 +260,24 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
     var dataCompressedSize: Int
 
     while (start < dataIn.size) {
-        end = dataIn.size
+        end = start + MAX_CHUNK_DATA_SIZE * 2
+        if (end > dataIn.size) {
+            end = dataIn.size
+        } else {
+            // Search a near and easy entry point
+            do {
+                dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
+                dataCompressedSize = dataCompressed.size
+                if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
+                if (dataCompressedSize > MAX_CHUNK_DATA_SIZE) break;
+                end = start + (end - start) * 3 / 2
+                if (end > dataIn.size) {
+                    end = dataIn.size
+                    break;
+                }
+            } while (true)
+        }
+        // old entry point: end = dataIn.size
         if (end-start > maxSize) {
             end = start + maxSize
         }
@@ -268,8 +285,11 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
         do {
             dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
             dataCompressedSize = dataCompressed.size
-            if (verbose) print("\r\tChunk size: ${end-start} -> ${dataCompressedSize} [${end*100/dataIn.size}%] ")
+            if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
             if (end-start == maxSize && dataCompressedSize <= MAX_CHUNK_DATA_SIZE) break
+            if ((lastEnd-end).absoluteValue <= 1 && dataCompressedSize > MAX_CHUNK_DATA_SIZE) {
+                end -= 1 ; lastEnd = end ; continue
+            }
             if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= MAX_CHUNK_DATA_SIZE-1) break
             if (dataCompressedSize >= MAX_CHUNK_DATA_SIZE-2 && dataCompressedSize <= MAX_CHUNK_DATA_SIZE) break
             aux = end
@@ -288,11 +308,16 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
             end = min(dataIn.size, start + MAX_CHUNK_DATA_SIZE)
             dataCompressedSize = end - start
         }
-        if (verbose) println("\r\tChunk size: ${end-start} -> $dataCompressedSize [${end*100/dataIn.size}%] Done            ")
+        if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize, true)
         out.add(dataIn.copyOfRange(start, end))
         start = end
     }
     return out
+}
+
+private fun printCompressionProgress(len: Int, totalLen: Int, uncompressedSize: Int, compressedSize: Int, done: Boolean = false) {
+    print("\r\tChunk size: $uncompressedSize -> $compressedSize [${len*100/totalLen}%] ")
+    if (done) println("Done            ")
 }
 
 private fun showHelp(exit: Boolean = true)
