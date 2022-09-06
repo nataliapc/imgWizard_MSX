@@ -37,18 +37,6 @@ internal class PaletteTypeTest {
         assertEquals(0xce8c42, PaletteType.GRB555.toRGB24(0b100011100101000))
     }
 
-    @Disabled
-    @Test
-    fun writeFromRGB24_Ok() {
-        TODO()
-    }
-
-    @Disabled
-    @Test
-    fun readToRGB24_Ok() {
-        TODO()
-    }
-
     @Test
     fun getBpp_Ok() {
         assertEquals(8, PaletteType.GRB332.bpp)

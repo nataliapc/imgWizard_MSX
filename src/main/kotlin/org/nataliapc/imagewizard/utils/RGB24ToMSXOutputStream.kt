@@ -23,15 +23,10 @@ class RGB24ToMSXOutputStream(private val pixelType: PixelType, private val palet
         when {
             pixelType.isShortSized() -> writeShortLE(paletteType.toColorMSX(rgb24))
             pixelType.isByteSized() -> {
-                if (!pixelType.indexed) {
-                    writeByte(paletteType.toColorMSX(rgb24))
+                if (pixelType.indexed || isIndexedBD8()) {
+                    packIndexed(rgb24)
                 } else {
-                    lastBitWrited -= pixelType.bpp
-                    currentByte = currentByte or ((rgb24 and pixelType.mask) shl lastBitWrited)
-                    if (lastBitWrited == 0) {
-                        writeByte(currentByte)
-                        resetWrite()
-                    }
+                    writeByte(paletteType.toColorMSX(rgb24))
                 }
             }
             else -> throw RuntimeException("Unexpected write Color ($rgb24) for ${paletteType.name} ${pixelType.name}")
@@ -54,4 +49,15 @@ class RGB24ToMSXOutputStream(private val pixelType: PixelType, private val palet
         writeFlush()
         super.close()
     }
+
+    private fun packIndexed(value: Int) {
+        lastBitWrited -= pixelType.bpp
+        currentByte = currentByte or ((value and pixelType.mask) shl lastBitWrited)
+        if (lastBitWrited == 0) {
+            writeByte(currentByte)
+            resetWrite()
+        }
+    }
+
+    private fun isIndexedBD8(): Boolean = pixelType == PixelType.BD8 && paletteType == PaletteType.GRB555
 }
