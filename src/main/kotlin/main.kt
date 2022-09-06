@@ -1,5 +1,6 @@
 import org.nataliapc.imagewizard.compressor.Compressor
-import org.nataliapc.imagewizard.compressor.Pletter.Companion.MAX_SIZE_UNCOMPRESSED
+import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
+import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.DaadRedirectToImage
@@ -9,9 +10,7 @@ import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdDataChunk
 import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
-import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
-import org.nataliapc.imagewizard.utils.toHex
 import java.awt.*
 import java.io.File
 import java.io.FileInputStream
@@ -148,7 +147,11 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
 
     val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor)
     dataChunks.forEach {
-        imgx.add(V9990CmdDataChunk(it, compressor))
+        if (it.size == MAX_CHUNK_DATA_SIZE) {
+            imgx.add(V9990CmdDataChunk(it, Raw()))
+        } else {
+            imgx.add(V9990CmdDataChunk(it, compressor))
+        }
     }
 
     val fileOut = File(fileIn.nameWithoutExtension + ".imx")
@@ -253,6 +256,7 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
     var lastEnd: Int
     var aux: Int
     var dataCompressed: ByteArray
+    var dataCompressedSize: Int
 
     while (start < dataIn.size) {
         end = dataIn.size
@@ -262,12 +266,13 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
         lastEnd = start
         do {
             dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
-            if (verbose) print("\r\tChunk size: ${end-start} -> ${dataCompressed.size} [${end*100/dataIn.size}%] ")
-            if (end-start == maxSize && dataCompressed.size <= MAX_CHUNK_DATA_SIZE) break
+            dataCompressedSize = dataCompressed.size
+            if (verbose) print("\r\tChunk size: ${end-start} -> ${dataCompressedSize} [${end*100/dataIn.size}%] ")
+            if (end-start == maxSize && dataCompressedSize <= MAX_CHUNK_DATA_SIZE) break
             if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= MAX_CHUNK_DATA_SIZE-1) break
-            if (dataCompressed.size >= MAX_CHUNK_DATA_SIZE-2 && dataCompressed.size <= MAX_CHUNK_DATA_SIZE) break
+            if (dataCompressedSize >= MAX_CHUNK_DATA_SIZE-2 && dataCompressedSize <= MAX_CHUNK_DATA_SIZE) break
             aux = end
-            if (dataCompressed.size > MAX_CHUNK_DATA_SIZE) {
+            if (dataCompressedSize > MAX_CHUNK_DATA_SIZE) {
                 end -= (end-lastEnd).absoluteValue / 2
             } else {
                 end += (end-lastEnd).absoluteValue / 2
@@ -278,7 +283,11 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
             }
             lastEnd = aux
         } while (true)
-        if (verbose) println(" Done            ")
+        if (end-start <= dataCompressedSize) {
+            end = start + MAX_CHUNK_DATA_SIZE
+            dataCompressedSize = end - start
+        }
+        if (verbose) println("\r\tChunk size: ${end-start} -> $dataCompressedSize [${end*100/dataIn.size}%] Done            ")
         out.add(dataIn.copyOfRange(start, end))
         start = end
     }
@@ -330,6 +339,7 @@ private fun showHelp(exit: Boolean = true)
             "                 RAW: no compression but fastest load.\n"+
             "                 RLE: light compression but fast load (default).\n"+
             "                 PLETTER: high compression but slow.\n"+
+            "                 PLETTEREXT: Like PLETTER but w/ external compressor binary.\n"+
             " [transparent] Optional: the color index that will become transparent (decimal).\n"+
             "               Compression is forced to RLE.\n"+
             " <target_loc>  Target location number to redirect to.\n"+
@@ -357,16 +367,4 @@ fun showError(msg: String)
 {
     println(msg)
     exitProcess(1)
-}
-
-fun otra()
-{
-    val sc = ScreenBitmapImpl.SC5()
-
-    val image = ImageWrapperImpl.from(File("img.png"), sc.pixelType, sc.paletteType)
-
-    println(image.getOriginalPalette().toHex())
-    println(image.getFinalPalette().toHex())
-
-    println(image.getRectangle(7,0,128,1).toHex())
 }

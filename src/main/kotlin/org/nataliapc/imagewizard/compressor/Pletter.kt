@@ -13,10 +13,6 @@ import kotlin.math.pow
 @ExperimentalUnsignedTypes
 class Pletter : CompressorImpl(2)
 {
-    companion object {
-        const val MAX_SIZE_UNCOMPRESSED = 0xffff
-    }
-
     private class Metadata {
         var reeks: Int = 0     /* Total times that byte is repeated */
         var cpos = IntArray(7)

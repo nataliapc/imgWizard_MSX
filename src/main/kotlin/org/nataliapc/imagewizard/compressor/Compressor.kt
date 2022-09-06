@@ -8,11 +8,16 @@ interface Compressor
     fun compress(data: ByteArray): ByteArray
     fun uncompress(data: ByteArray): ByteArray
 
+    companion object {
+        const val MAX_SIZE_UNCOMPRESSED = 0xffff
+    }
+
     enum class Types(val instance: Compressor) {
         RAW(Raw()),
         RLE(Rle()),
         PLETTER(Pletter()),
-        PLETTEREXT(PletterExtern());
+        PLETTEREXT(PletterExtern()),
+        ZX7EXT(Zx7Extern());
 
         companion object {
             fun byId(id: Int): Compressor {
