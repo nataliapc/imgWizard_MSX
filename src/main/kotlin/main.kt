@@ -23,6 +23,7 @@ import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
 import java.awt.Image
 import java.awt.image.BufferedImage
+import java.lang.Integer.min
 
 
 const val version = "1.4.00"
@@ -284,7 +285,7 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
             lastEnd = aux
         } while (true)
         if (end-start <= dataCompressedSize) {
-            end = start + MAX_CHUNK_DATA_SIZE
+            end = min(dataIn.size, start + MAX_CHUNK_DATA_SIZE)
             dataCompressedSize = end - start
         }
         if (verbose) println("\r\tChunk size: ${end-start} -> $dataCompressedSize [${end*100/dataIn.size}%] Done            ")

@@ -120,9 +120,9 @@ class ImageWrapperImpl private constructor(): ImageWrapper
             throw RuntimeException("Rectangle ($x,$y,$w,$h) not match image bounds (${image.width}x${image.height})")
         }
         val intArray = IntArray(w * h)
-        for (posY in y until y+h) {
-            for (posX in x until x+w) {
-                intArray[posX+posY*w] = image.getRGB(posX, posY)
+        for (posY in 0 until h) {
+            for (posX in 0 until w) {
+                intArray[posX+posY*w] = image.getRGB(x+posX, y+posY)
             }
         }
 
