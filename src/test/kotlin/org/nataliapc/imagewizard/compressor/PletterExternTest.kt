@@ -2,8 +2,6 @@ package org.nataliapc.imagewizard.compressor
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.nataliapc.imagewizard.compressor.Pletter.Reg8
-import org.nataliapc.imagewizard.compressor.Pletter.Reg16
 
 
 @ExperimentalUnsignedTypes

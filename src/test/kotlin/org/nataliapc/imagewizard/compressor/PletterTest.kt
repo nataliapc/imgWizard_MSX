@@ -2,8 +2,12 @@ package org.nataliapc.imagewizard.compressor
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import org.nataliapc.imagewizard.compressor.Pletter.Reg8
-import org.nataliapc.imagewizard.compressor.Pletter.Reg16
+import org.nataliapc.imagewizard.utils.AsmZ80Virtual.*
+import org.nataliapc.imagewizard.utils.AsmZ80Virtual.Companion.zeroFlag
+import org.nataliapc.imagewizard.utils.AsmZ80Virtual.Companion.carryFlag
+import org.nataliapc.imagewizard.utils.AsmZ80Virtual.Companion.clearFlags
+import org.nataliapc.imagewizard.utils.AsmZ80Virtual.Companion.pvFlag
+import org.nataliapc.imagewizard.utils.AsmZ80Virtual.Companion.signFlag
 
 
 @ExperimentalUnsignedTypes
@@ -51,27 +55,27 @@ internal class PletterTest
     @Test
     fun reg16_inc_Ok() {
         val hl = Reg16(0xffff)
-        Reg8.clearFlags()
+        clearFlags()
 
         hl.inc()
 
         assertEquals(0x0000, hl.get())
-        assertEquals(false, Reg8.zeroFlag)
-        assertEquals(false, Reg8.carryFlag)
-        assertEquals(false, Reg8.pvFlag)
+        assertEquals(false, zeroFlag)
+        assertEquals(false, carryFlag)
+        assertEquals(false, pvFlag)
     }
 
     @Test
     fun reg16_dec_Ok() {
         val hl = Reg16(0x0000)
-        Reg8.clearFlags()
+        clearFlags()
 
         hl.dec()
 
         assertEquals(0xffff, hl.get())
-        assertEquals(false, Reg8.zeroFlag)
-        assertEquals(false, Reg8.carryFlag)
-        assertEquals(false, Reg8.pvFlag)
+        assertEquals(false, zeroFlag)
+        assertEquals(false, carryFlag)
+        assertEquals(false, pvFlag)
     }
 
     @Test
@@ -82,14 +86,14 @@ internal class PletterTest
         for (i in 0..0xffff) {
             hl.ld(10)
             de.ld(i)
-            Reg8.carryFlag = true
+            carryFlag = true
 
             hl.sbc(de)
 
             assertEquals((10-i-1) and 0xffff, hl.get(), "i = $i")
-            assertEquals(hl.get() == 0, Reg8.zeroFlag, "i = $i")
-            assertEquals(i > 9, Reg8.carryFlag, "i = $i")
-            assertEquals(hl.get().toShort() < 0, Reg8.signFlag, "i = $i")
+            assertEquals(hl.get() == 0, zeroFlag, "i = $i")
+            assertEquals(i > 9, carryFlag, "i = $i")
+            assertEquals(hl.get().toShort() < 0, signFlag, "i = $i")
         }
     }
 
@@ -101,14 +105,14 @@ internal class PletterTest
         for (i in 0..0xffff) {
             hl.ld(0xfff0)
             de.ld(i)
-            Reg8.carryFlag = true
+            carryFlag = true
 
             hl.adc(de)
 
             assertEquals((0xfff0+i+1) and 0xffff, hl.get(), "i = $i")
-            assertEquals(hl.get() == 0, Reg8.zeroFlag, "i = $i")
-            assertEquals(i > 14, Reg8.carryFlag, "i = $i")
-            assertEquals(hl.get().toShort() < 0, Reg8.signFlag, "i = $i")
+            assertEquals(hl.get() == 0, zeroFlag, "i = $i")
+            assertEquals(i > 14, carryFlag, "i = $i")
+            assertEquals(hl.get().toShort() < 0, signFlag, "i = $i")
         }
     }
 }
