@@ -9,6 +9,7 @@ abstract class AsmZ80Helper
     protected val memory = ByteArray(65536)
 
     val a = Reg8()
+    val f = Reg8()
     val h = Reg8()
     val l = Reg8()
     val d = Reg8()
@@ -20,6 +21,7 @@ abstract class AsmZ80Helper
     val y = Reg8()
     val ix = Reg16(i, x)
     val iy = Reg16(i, y)
+    val af = Reg16(a, f)
     val bc = Reg16(b, c)
     val hl = Reg16(h, l)
     val de = Reg16(d, e)
@@ -42,6 +44,16 @@ abstract class AsmZ80Helper
         fun updateCarryFlag16(value: Int) { carryFlag = value < 0 || (value and 0x10000) != 0 }
     }
 
+    init {
+        clearRegs()
+        clearMemory()
+    }
+
+    fun clearRegs() {
+        af.ld(0); bc.ld(0); de.ld(0); hl.ld(0)
+        ix.ld(0); iy.ld(0)
+    }
+
     fun clearMemory() {
         memory.fill(0)
     }
@@ -62,6 +74,8 @@ abstract class AsmZ80Helper
     class Reg8() {
         private var reg8 = 0
         private var exx = 0
+
+        fun toHex(): String = "%02x".format(get())
 
         constructor(value: Int) : this() { ld(value) }
         constructor(value: Byte) : this() { ld(value.toUByte().toInt()) }
@@ -195,6 +209,8 @@ abstract class AsmZ80Helper
 
         constructor(h: Reg8, l: Reg8): this() { this.high = h ; this.low = l }
         constructor(value: Int) : this() { ld(value) }
+
+        fun toHex(): String = "%04x".format(get())
 
         fun get(): Int = (high.get() shl 8) or low.get()
         fun getSigned(): Int = ((high.get() shl 8) or low.get()).toShort().toInt()

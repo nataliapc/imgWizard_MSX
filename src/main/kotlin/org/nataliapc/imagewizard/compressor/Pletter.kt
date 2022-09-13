@@ -437,7 +437,7 @@ class Pletter : CompressorImpl(2)
     {
         fun uncompress(data: ByteArray): ByteArray {
             val startOut = 0x4000
-            memory.fill(0)
+            clearMemory()
             data.copyInto(memory, 0)
             hl.ld(0)                          // Pointer to data (0)
             de.ld(startOut)                         // Pointer to out (startOut)

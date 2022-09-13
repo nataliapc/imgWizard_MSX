@@ -7,6 +7,28 @@ import org.junit.jupiter.api.Test
 internal class AsmZ80HelperTest : AsmZ80Helper()
 {
     @Test
+    fun updatePvFlagParity_Reg8_Ok() {
+        a.ld(0b10101010)
+        updatePvFlagParity(a)
+        assertTrue(pvFlag)
+
+        a.ld(0b00101010)
+        updatePvFlagParity(a)
+        assertFalse(pvFlag)
+    }
+
+    @Test
+    fun updatePvFlagParity_Reg16_Ok() {
+        hl.ld(0b1010101010101010)
+        updatePvFlagParity(hl)
+        assertTrue(pvFlag)
+
+        hl.ld(0b0010101010101010)
+        updatePvFlagParity(hl)
+        assertFalse(pvFlag)
+    }
+
+    @Test
     fun push_pop_Ok() {
         hl.ld(500)
         assertEquals(500, hl.get())

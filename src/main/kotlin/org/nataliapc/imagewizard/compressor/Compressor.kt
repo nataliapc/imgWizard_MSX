@@ -17,7 +17,7 @@ interface Compressor
         RLE(Rle()),
         PLETTER(Pletter()),
         PLETTEREXT(PletterExtern()),
-        ZX7EXT(Zx7Extern());
+        ZX7EXT(Zx7MiniExtern());
 
         companion object {
             fun byId(id: Int): Compressor {

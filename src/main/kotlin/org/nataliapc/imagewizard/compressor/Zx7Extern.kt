@@ -30,11 +30,10 @@ class Zx7Extern : CompressorImpl(3) {
     class Zx7Uncompress : AsmZ80Helper()
     {
         fun uncompress(data: ByteArray): ByteArray {
-//TODO            val startIn = 0x0000
-            val startIn = 0x1000
-//TODO            val startOut = 0x4000
-            val startOut = 0x8000
-            memory.fill(0)
+            val startIn = 0x0000
+            val startOut = 0x4000
+            clearRegs()
+            clearMemory()
             data.copyInto(memory, startIn)
             hl.ld(startIn)                          // Pointer to data (0)
             de.ld(startOut)                         // Pointer to out (startOut)
@@ -108,6 +107,8 @@ class Zx7Extern : CompressorImpl(3) {
             hl.dec()
             a.adc(a)
         }
+    }
+}
 /*
 ; Parameters:
 ;   HL: source address (compressed data)
@@ -159,89 +160,3 @@ getbit: add     a, a            ; check next bit
         adc     a, a
         ret
 */
-    }
-/*
-    private lateinit var input_data: ByteArray
-    private lateinit var output_data: ArrayList<Byte>
-    private var input_index: Int = 0
-    private var partial_counter: Int = 0
-    private var bit_mask: Int = 0
-    private var bit_value: Int = 0
-
-    override fun uncompress(data: ByteArray): ByteArray {
-        var length: Int
-
-        input_data = data
-        output_data = ArrayList(0)
-
-        input_index = 0
-        partial_counter = 0
-        bit_mask = 0
-
-        write_byte(read_byte())
-        while (true) {
-            if (read_bit() == 0) {
-                write_byte(read_byte())
-            } else {
-                length = read_elias_gamma()+1
-                if (length == 0) {
-                    return output_data.toByteArray()
-                }
-                write_bytes(read_offset() + 1, length)
-            }
-        }
-    }
-
-    private fun read_byte(): Int = input_data[input_index++].toUByte().toInt()
-
-    private fun write_byte(value: Int) {
-        output_data.add(value.toByte())
-    }
-
-    private fun read_bit(): Int
-    {
-        bit_mask = bit_mask shr 1
-        if (bit_mask == 0) {
-            bit_mask = 128
-            bit_value = read_byte()
-        }
-        return bit_value and bit_mask
-    }
-
-    private fun write_bytes(offset: Int, length: Int)
-    {
-        var len = length
-        while (len-- > 0) {
-            write_byte(output_data[output_data.size - offset].toUByte().toInt());
-        }
-    }
-
-    private fun read_elias_gamma(): Int
-    {
-        var value = 1
-
-        while (read_bit() == 0) {
-            value = value shl 1 or read_bit()
-        }
-        if (value and 255 == 255) {
-            value = -1
-        }
-        return value
-    }
-
-    private fun read_offset(): Int
-    {
-        var i: Int
-        var value: Int = read_byte()
-
-        if (value < 128) {
-            return value
-        }
-        i = read_bit()
-        i = i shl 1 or read_bit()
-        i = i shl 1 or read_bit()
-        i = i shl 1 or read_bit()
-        return (value and 127 or i shl 7) + 128
-    }
-*/
-}
