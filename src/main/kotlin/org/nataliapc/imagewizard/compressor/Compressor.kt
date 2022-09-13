@@ -9,7 +9,7 @@ interface Compressor
     fun uncompress(data: ByteArray): ByteArray
 
     companion object {
-        const val MAX_SIZE_UNCOMPRESSED = 0xffff
+        const val MAX_SIZE_UNCOMPRESSED = 48 * 1024
     }
 
     enum class Types(val instance: Compressor) {

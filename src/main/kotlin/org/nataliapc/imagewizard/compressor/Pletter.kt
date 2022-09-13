@@ -1,10 +1,8 @@
 package org.nataliapc.imagewizard.compressor
 
-import org.nataliapc.imagewizard.utils.AsmZ80Virtual
+import org.nataliapc.imagewizard.utils.AsmZ80Helper
 import java.lang.Exception
 import java.util.*
-import kotlin.collections.ArrayList
-import kotlin.math.pow
 
 
 /*
@@ -435,117 +433,14 @@ class Pletter : CompressorImpl(2)
         return PletterUncompress().uncompress(data)
     }
 
-    class PletterUncompress: AsmZ80Virtual() {
+    class PletterUncompress: AsmZ80Helper()
+    {
         fun uncompress(data: ByteArray): ByteArray {
             val startOut = 0x4000
-            val out = ArrayList<Byte>(0)
-            val a = Reg8()
-            val h = Reg8();
-            val l = Reg8()
-            val d = Reg8();
-            val e = Reg8()
-            val b = Reg8();
-            val c = Reg8()
-            val i = Reg8();
-            val x = Reg8()
-            val ix = Reg16(i, x)
-            val bc = Reg16(b, c)
-            val hl = Reg16(h, l)   // Pointer to data (0)
-            val de = Reg16(d, e)   // Pointer to out (startOut)
-            de.ld(startOut)
-            fun ldi() {
-                //P/V is reset in case of overflow (if BC=0 after calling LDI).
-                var origOffset = 0
-                val orig = if (hl.get() >= startOut) {
-                    origOffset = startOut; out.toByteArray()
-                } else data
-                out.add(de.get() - startOut, orig[hl.get() - origOffset])
-                de.inc()
-                hl.inc()
-                pvFlag = (bc.get() == 0)
-                bc.dec()
-            }
-
-            fun ldir() {
-                do {
-                    ldi()
-                } while (bc.get() != 0)
-            }
-
-            fun exx() {
-                bc.exx(); de.exx(); hl.exx()
-            }
-
-            fun getBit() {
-                a.ld(data[hl.get()])                // ld a,(hl)
-                hl.inc()                            // inc hl
-                a.rla()                             // rla
-            }
-
-            fun getBitexx() {
-                exx()                               // exx
-                a.ld(data[hl.get()])                // ld a,(hl)
-                hl.inc()                            // inc hl
-                exx()                               // exx
-                a.rla()                             // rla
-            }
-
-            fun offsak() {
-                bc.inc()                            // inc bc
-                Z80stack.push(hl)                   // push hl
-                exx()                               // exx
-                Z80stack.push(hl)                   // push hl
-                exx()                               // exx
-                hl.ld(de)                           // ld l,e | ld h,d
-                hl.sbc(bc)                          // sbc hl,bc
-                Z80stack.pop(bc)                    // pop bc
-                ldir()                              // ldir
-                Z80stack.pop(hl)                    // pop hl
-            }
-
-            fun mode2() {
-                a.add(a)                            // add a,a
-                if (zeroFlag) getBit()         // call z,getbit
-                b.rl()                              // rl b
-                a.add(a)                            // add a,a
-                if (zeroFlag) getBit()         // call z,getbit
-                if (carryFlag) {               // jr nc,offsok
-                    a.or(a)                         // or a
-                    b.inc()                         // inc b
-                    c.res(7)                        // res 7, c
-                }
-                offsak()
-            }
-
-            fun mode3() {
-                a.add(a)                            // add a,a
-                if (zeroFlag) getBit()         // call z,getbit
-                b.rl()                              // rl b
-                mode2()
-            }
-
-            fun mode4() {
-                a.add(a)                            // add a,a
-                if (zeroFlag) getBit()         // call z,getbit
-                b.rl()                              // rl b
-                mode3()
-            }
-
-            fun mode5() {
-                a.add(a)                            // add a,a
-                if (zeroFlag) getBit()         // call z,getbit
-                b.rl()                              // rl b
-                mode4()
-            }
-
-            fun mode6() {
-                a.add(a)                            // add a,a
-                if (zeroFlag) getBit()         // call z,getbit
-                b.rl()                              // rl b
-                mode5()
-            }
-
-            val modes = arrayOf({ offsak() }, { mode2() }, { mode3() }, { mode4() }, { mode5() }, { mode6() })
+            memory.fill(0)
+            data.copyInto(memory, 0)
+            hl.ld(0)                          // Pointer to data (0)
+            de.ld(startOut)                         // Pointer to out (startOut)
 
             a.ld(data[hl.get()])                    // ld a,(hl)
             hl.inc()                                // inc hl
@@ -612,7 +507,81 @@ class Pletter : CompressorImpl(2)
                 // jp (iy)
             }
 
-            return out.toByteArray()
+            de.exx()
+            return memory.copyOfRange(startOut, de.get())
         }
+
+        private fun getBit() {
+            a.ld(memory[hl.get()])              // ld a,(hl)
+            hl.inc()                            // inc hl
+            a.rla()                             // rla
+        }
+
+        private fun getBitexx() {
+            exx()                               // exx
+            a.ld(memory[hl.get()])              // ld a,(hl)
+            hl.inc()                            // inc hl
+            exx()                               // exx
+            a.rla()                             // rla
+        }
+
+        private fun offsak() {
+            bc.inc()                            // inc bc
+            push(hl)                   // push hl
+            exx()                               // exx
+            push(hl)                   // push hl
+            exx()                               // exx
+            hl.ld(de)                           // ld l,e | ld h,d
+            hl.sbc(bc)                          // sbc hl,bc
+            pop(bc)                    // pop bc
+            ldir()                              // ldir
+            pop(hl)                    // pop hl
+        }
+
+        private fun mode2() {
+            a.add(a)                            // add a,a
+            if (zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            a.add(a)                            // add a,a
+            if (zeroFlag) getBit()         // call z,getbit
+            if (carryFlag) {               // jr nc,offsok
+                a.or(a)                         // or a
+                b.inc()                         // inc b
+                c.res(7)                        // res 7, c
+            }
+            offsak()
+        }
+
+        private fun mode3() {
+            a.add(a)                            // add a,a
+            if (zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode2()
+        }
+
+        private fun mode4() {
+            a.add(a)                            // add a,a
+            if (zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode3()
+        }
+
+        private fun mode5() {
+            a.add(a)                            // add a,a
+            if (zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode4()
+        }
+
+        private fun mode6() {
+            a.add(a)                            // add a,a
+            if (zeroFlag) getBit()         // call z,getbit
+            b.rl()                              // rl b
+            mode5()
+        }
+
+        private val modes = arrayOf(
+            { offsak() }, { mode2() }, { mode3() }, { mode4() }, { mode5() }, { mode6() }
+        )
     }
 }
