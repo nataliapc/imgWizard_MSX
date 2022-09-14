@@ -51,6 +51,10 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
         }
     }
 
+    override fun getInfoChunk(): InfoChunk? {
+        return infoChunk
+    }
+
     override fun get(index: Int): Chunk {
         return chunks[index]
     }

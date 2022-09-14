@@ -1,10 +1,12 @@
 package org.nataliapc.imagewizard.image
 
 import org.nataliapc.imagewizard.image.chunks.Chunk
+import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import java.awt.image.BufferedImage
 
 interface ImgX
 {
+    fun getInfoChunk(): InfoChunk?
     fun get(index: Int): Chunk
     fun add(chunk: Chunk): ImgX
     fun addAt(index:Int, chunk: Chunk): ImgX

@@ -1,3 +1,4 @@
+import org.nataliapc.imagewizard.ViewFrame
 import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.compressor.Raw
@@ -126,7 +127,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
     if (lines > image.height) {
         throw RuntimeException("Parameter 'lines' exceeds input screen height")
     }
-    if (args[0] == "cl") {
+    if (args[cmdIdx] == "cl") {
         TODO("CL option not yet implemented")
     }
 
@@ -239,43 +240,17 @@ fun cmdR_LocationRedirection(args: Array<String>)
 // v <file.IM?>
 fun cmdV_ViewImageIMx(args: Array<String>) {
     val fileIdx = 1
-    val zoomFactor = 2
-    val origImg: BufferedImage
     val fileIn = getFile(args[fileIdx], "Opening")
-
-    origImg = if (fileIn.name.lowercase().endsWith(".png")) {
+    var infoChunk: InfoChunk? = null
+    val origImg: BufferedImage = if (canReadImageExtension(fileIn.extension)) {
         ImageIO.read(FileInputStream(fileIn))
     } else {
         val imgx = ImgXImpl.from(fileIn)
+        infoChunk = imgx.getInfoChunk()
         imgx.render()
     }
 
-    val imgWidth = origImg.width * zoomFactor
-    val imgHeight = origImg.height * zoomFactor
-    val image: Image = origImg.getScaledInstance(imgWidth, imgHeight, Image.SCALE_FAST)
-
-    val frame = JFrame()
-    val picLabel = JLabel(ImageIcon(image));
-
-    val menuBar = JMenuBar()
-    val menuFile = JMenu("About")
-    menuBar.add(menuFile)//, { frame.dispatchEvent(WindowEvent(frame, WindowEvent.WINDOW_CLOSING)) })
-
-    val jPanel = JPanel()
-    jPanel.background = Color.DARK_GRAY
-    jPanel.layout = BorderLayout()
-    jPanel.add(picLabel, BorderLayout.CENTER)
-
-    val scroller = JScrollPane(jPanel)
-
-    val width = max(imgWidth, 640)
-    val height = max(imgHeight, 480)
-    frame.title = "${fileIn.name} - $appname $version"
-    frame.size = Dimension(width, height)
-    frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
-    frame.add(menuBar, BorderLayout.NORTH)
-    frame.add(scroller, BorderLayout.CENTER)
-    frame.isVisible = true
+    ViewFrame("$appname $version", fileIn, infoChunk, origImg)
 }
 
 private fun getFile(filename: String, verb: String = "Reading"): File
@@ -285,7 +260,7 @@ private fun getFile(filename: String, verb: String = "Reading"): File
     if (!file.exists()) {
         showError("ERROR: file not exists...")
     }
-    if (!file.isFile()) {
+    if (!file.isFile) {
         showError("ERROR: input file is not a file...")
     }
     return file
@@ -368,10 +343,29 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
     return out
 }
 
+private fun canReadImageExtension(fileExt: String): Boolean {
+    val iter: Iterator<*> = ImageIO.getImageReadersBySuffix(fileExt)
+    return iter.hasNext()
+}
+
 private fun printCompressionProgress(len: Int, totalLen: Int, uncompressedSize: Int, compressedSize: Int, done: Boolean = false) {
     print("\r\tChunk size: $uncompressedSize -> $compressedSize [${len*100/totalLen}%] ")
     if (done) println("Done            ")
 }
+
+private val commandLineOptions = hashMapOf<String, String>(
+    "l" to "$appname l <fileIn.IM?>",
+    "v" to "$appname v <*.IM?|*.PNG>",
+    "c" to "$appname c[l] <fileIn.SC?> <lines> [compressor | transparent_color]",
+    "cl" to "$appname c[l] <fileIn.SC?> <lines> [compressor | transparent_color]",
+    "s" to "$appname s <fileIn.SC?> <x> <y> <w> <h> [transparent_color]",
+    "gs" to "$appname gs <file.PNG> <colors> <compressor> [<sx> <sy> <nx> <ny> [<dx> <dy>]]",
+    "r" to "$appname r <fileOut.IM?> <target_loc>",
+    "d" to "$appname d <fileIn.IM?> <chunk_id>",
+    "j" to "$appname j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3] ...",
+    "5a" to "$appname 5a <fileIn.SC5> <fileOut.SCA> <lines>",
+    "ca" to "$appname ca <fileIn.SCC> <fileOut.SCA> <lines>"
+)
 
 private fun showHelp(exit: Boolean = true)
 {
@@ -382,34 +376,34 @@ private fun showHelp(exit: Boolean = true)
             "to be used by MSX2DAAD engine.\n"+
             "\n"+
             "L) List image chunks:\n"+
-            "    $appname l <fileIn.IM?>\n"+
+            "    ${commandLineOptions["l"]}\n"+
             "\n"+
             "V) View image:\n"+
-            "    $appname v <*.IM?|*.PNG>\n"+
+            "    ${commandLineOptions["v"]}\n"+
             "\n"+
             "C) Create an image IMx (CL - Create the palette at last chunk):\n"+
-            "    $appname c[l] <fileIn.SC?> <lines> [compressor | transparent_color]\n"+
+            "    ${commandLineOptions["c"]}\n"+
             "\n"+
             "S) Create an image from a rectangle:\n"+
-            "    $appname s <fileIn.SC?> <x> <y> <w> <h> [transparent_color]\n"+
+            "    ${commandLineOptions["s"]}\n"+
             "\n"+
             "GS) Create a V9990 image from a rectangle:\n"+
-            "    $appname gs <file.PNG> <colors> <compressor> [<sx> <sy> <nx> <ny> [<dx> <dy>]]\n"+
+            "    ${commandLineOptions["gs"]}\n"+
             "\n"+
             "R) Create a location redirection:\n"+
-            "    $appname r <fileOut.IM?> <target_loc>\n"+
+            "    ${commandLineOptions["r"]}\n"+
             "\n"+
             "D) Remove a CHUNK from an image:\n"+
-            "    $appname d <fileIn.IM?> <chunk_id>\n"+
+            "    ${commandLineOptions["d"]}\n"+
             "\n"+
             "J) Join several IMx files in just one:\n"+
-            "    $appname j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3] ...\n"+
+            "    ${commandLineOptions["j"]}\n"+
             "\n"+
             "5A) Transform a SC5 image to a RGB SC10(SCA) one:\n"+
-            "    $appname 5a <fileIn.SC5> <fileOut.SCA> <lines>\n"+
+            "    ${commandLineOptions["5a"]}\n"+
             "\n"+
             "CA) Transform a SC12(SCC) image to a YJK SC10(SCA) one:\n"+
-            "    $appname ca <fileIn.SCC> <fileOut.SCA> <lines>\n"+
+            "    ${commandLineOptions["ca"]}\n"+
             "\n"+
             " <fileIn>      Input file in format SCx (SC5/SC6/SC7/SC8/SCA/SCC)\n"+
             "               Palette can be inside SCx file or PL5 PL6 PL7 files.\n"+
