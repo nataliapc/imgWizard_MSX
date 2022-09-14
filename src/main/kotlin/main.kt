@@ -1,12 +1,11 @@
 import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.compressor.Raw
+import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
-import org.nataliapc.imagewizard.image.chunks.impl.DaadRedirectToImage
-import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
-import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk
-import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdDataChunk
+import org.nataliapc.imagewizard.image.chunks.impl.*
+import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
@@ -39,7 +38,7 @@ fun main(args: Array<String>)
         val time1 = System.currentTimeMillis()
         when (args[0].lowercase()) {
             "l" -> cmdL_ListContent(args)
-//            "c", "cl" -> cmdCL_CreateImageIMx(args)
+            "c", "cl" -> cmdCL_CreateImageIMx(args)
 //            "s" -> cmdS_CreateImageFromRectangle(args)
             "gs" -> cmdGS_V9990ImageFromRectangle(args)
             "r" -> cmdR_LocationRedirection(args)
@@ -107,8 +106,58 @@ fun cmdD_RemoveChunkFromIMx(args: Array<String>)
 // c[l] <fileIn.SC?> <lines> [compressor | transparent_color]
 fun cmdCL_CreateImageIMx(args: Array<String>)
 {
-    val lines = checkNumericArg(args[2])
-    TODO()
+    val cmdIdx = 0
+    val fileIdx = 1
+    val linesIdx = 2
+    val compressorIdx = 3
+    val transpIdx = 3
+
+    if (args.size < linesIdx+1 || args.size > compressorIdx+1) {
+        showError("Bad argmuments number: ${args.size}")
+    }
+    val fileIn = getFile(args[fileIdx], "Opening")
+    val image = ScreenBitmapImpl.from(fileIn) as ScreenBitmapImpl
+    val lines = checkNumericArg(args[linesIdx])
+    val transparent: Byte? = if (args.size==linesIdx+1) null else args[transpIdx].toByteOrNull()
+    var compressor: Compressor = Rle(transparent = transparent ?: 0)
+    if (transparent == null && args.size == compressorIdx+1) {
+        compressor = Compressor.Types.valueOf(args[compressorIdx].uppercase()).instance
+    }
+    if (lines > image.height) {
+        throw RuntimeException("Parameter 'lines' exceeds input screen height")
+    }
+    if (args[0] == "cl") {
+        TODO("CL option not yet implemented")
+    }
+
+    val imgx = ImgXImpl()
+    val infoChunk = imgx.get(0) as InfoChunk
+    infoChunk.originalWidth = image.width
+    infoChunk.originalHeight = image.height
+    infoChunk.pixelType = image.pixelType
+    infoChunk.paletteType = image.paletteType
+    infoChunk.chipset = when (image.pixelType) {
+        PixelType.BYJK, PixelType.BYJKP -> Chipset.V9958
+        else -> Chipset.V9938
+    }
+
+    val dataChunks = splitDataInChunks(image.getRectangle(0, 0, image.width, lines), compressor)
+    dataChunks.forEach {
+        if (it.size == MAX_CHUNK_DATA_SIZE) {
+            imgx.add(ScreenBitmapChunk(it, Raw()))
+        } else {
+            imgx.add(V9990CmdDataChunk(it, compressor))
+        }
+    }
+
+    val fileOut = File(fileIn.nameWithoutExtension + ".imx")
+    println("### Creating file ${fileOut.name}")
+
+    val out = FileOutputStream(fileOut)
+    out.use {
+        out.write(imgx.build())
+    }
+    imgx.printInfo()
 }
 
 // l <file.IM?>
@@ -133,15 +182,15 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     val image = ImageWrapperImpl.from(fileIn, pixelType, paletteType)
     val sx = if (args.size <= 4) 0 else checkNumericArg(args[4])
     val sy = if (args.size <= 4) 0 else checkNumericArg(args[5])
-    val nx = if (args.size <= 4) image.getWidth() else checkNumericArg(args[6])
-    val ny = if (args.size <= 4) image.getHeight() else checkNumericArg(args[7])
+    val nx = if (args.size <= 4) image.width else checkNumericArg(args[6])
+    val ny = if (args.size <= 4) image.height else checkNumericArg(args[7])
     val dx = if (args.size <= 8) sx else checkNumericArg(args[8])
     val dy = if (args.size <= 8) sy else checkNumericArg(args[9])
 
     val imgx = ImgXImpl().add(V9990CmdChunk.RectangleToSend(dx, dy, nx, ny))
     val infoChunk = imgx.get(0) as InfoChunk
-    infoChunk.originalWidth = image.getWidth()
-    infoChunk.originalHeight = image.getHeight()
+    infoChunk.originalWidth = image.width
+    infoChunk.originalHeight = image.height
     infoChunk.pixelType = pixelType
     infoChunk.paletteType = paletteType
     infoChunk.chipset = Chipset.V9990
@@ -189,9 +238,10 @@ fun cmdR_LocationRedirection(args: Array<String>)
 
 // v <file.IM?>
 fun cmdV_ViewImageIMx(args: Array<String>) {
+    val fileIdx = 1
     val zoomFactor = 2
     val origImg: BufferedImage
-    val fileIn = File(args[1])
+    val fileIn = getFile(args[fileIdx], "Opening")
 
     origImg = if (fileIn.name.lowercase().endsWith(".png")) {
         ImageIO.read(FileInputStream(fileIn))
@@ -234,6 +284,9 @@ private fun getFile(filename: String, verb: String = "Reading"): File
     println("### $verb file ${file.name}")
     if (!file.exists()) {
         showError("ERROR: file not exists...")
+    }
+    if (!file.isFile()) {
+        showError("ERROR: input file is not a file...")
     }
     return file
 }

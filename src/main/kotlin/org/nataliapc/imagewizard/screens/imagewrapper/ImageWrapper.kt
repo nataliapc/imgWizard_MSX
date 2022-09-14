@@ -27,8 +27,6 @@ import kotlin.math.ceil
 
 interface ImageWrapper: ScreenRectangle, ScreenFullImage
 {
-    fun getWidth(): Int
-    fun getHeight(): Int
     fun getImageCopy(): BufferedImage
 
     fun isIndexed(): Boolean
@@ -44,13 +42,18 @@ interface ImageWrapper: ScreenRectangle, ScreenFullImage
 class ImageWrapperImpl private constructor(): ImageWrapper
 {
     private lateinit var image: BufferedImage
+    private var dataPointer: Int = 0
+
     var pixelType = defaultPixelType
         private set
     var paletteType = defaultPaletteType
         private set
 
-    override fun getWidth(): Int = image.width
-    override fun getHeight(): Int = image.height
+    override val width: Int
+        get() = image.width
+    override val height: Int
+        get() = image.height
+
     override fun getImageCopy(): BufferedImage = image.getSubimage(0,0, image.width, image.height)
 
     companion object
@@ -122,7 +125,7 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         val intArray = IntArray(w * h)
         for (posY in 0 until h) {
             for (posX in 0 until w) {
-                intArray[posX+posY*w] = image.getRGB(x+posX, y+posY)
+                intArray[posX+posY*w] = getPixel(x+posX, y+posY)
             }
         }
 
@@ -136,15 +139,20 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         return out.toByteArray()
     }
 
+    override fun getPixel(x: Int, y: Int): Int {
+        return image.getRGB(x, y)
+    }
+
     override fun render(chunk: Chunk) {
         when (chunk) {
-            is DaadClearWindow, is DaadRedirectToImage, is PauseChunk -> {}
+            is DaadRedirectToImage, is PauseChunk -> {}
             is InfoChunk -> {
                 ImageRender.reset(chunk.pixelType, chunk.paletteType, chunk.chipset)
             }
-            is DaadResetWindowGraphicPointer -> { TODO() }
-            is DaadSkipBytes -> { TODO() }
-            is ScreenBitmapChunk -> { TODO() }
+            is DaadResetWindowGraphicPointer -> { dataPointer = 0 }
+            is DaadClearWindow -> { dataPointer = 0 ; ImageRender.clear(image, 0) }
+            is DaadSkipBytes -> { dataPointer += chunk.auxData }
+            is ScreenBitmapChunk -> { dataPointer = ImageRender.screenBitmapChunk(image, chunk, dataPointer) }
             is ScreenPaletteChunk -> { TODO() }
             is V9990CmdChunk -> { ImageRender.commandV9990(image, chunk) }
             is V9990CmdDataChunk -> { ImageRender.commandDataV9990(image, chunk.getUncompressedData()) }
@@ -168,6 +176,26 @@ object ImageRender {
         this.pixelType = pixelType
         this.paletteType = paletteType
         this.chipset = chipset
+    }
+
+    fun clear(image: BufferedImage, color: Int) {
+        fill(image, 0, 0, image.width, image.height, LogicalOp.IMP, 0xffff, color)
+    }
+
+    fun screenBitmapChunk(image: BufferedImage, chunk: ScreenBitmapChunk, dataPointer: Int): Int {
+        val startRawPixel: Int = pixelType.pixelsPerByte.toInt() * dataPointer
+        var xPos: Int = startRawPixel % image.width
+        var yPos: Int = startRawPixel / image.width
+        val colorStream = MSXToRGB24InputStream(chunk.getUncompressedData(), pixelType, paletteType)
+        while (colorStream.available() > 0) {
+            image.setRGB(xPos, yPos, colorStream.readColor())
+            xPos++
+            if (xPos >= image.width) {
+                xPos = 0
+                yPos++
+            }
+        }
+        return dataPointer + chunk.auxData
     }
 
     fun commandDataV9990(image: BufferedImage, data: ByteArray) {
@@ -240,9 +268,6 @@ object ImageRender {
 
     private fun applyDataToImage(image: BufferedImage, data: DataByteArrayOutputStream) {
         val dataInt = convertData(data)
-/*        for (i in 0 until dataInt.size) {
-            image.setRGB(i % dataRect.width, i / dataRect.width, dataInt[i])
-        }*/
         image.setRGB(
             dataRect.x, dataRect.y,
             dataRect.width, dataRect.height,

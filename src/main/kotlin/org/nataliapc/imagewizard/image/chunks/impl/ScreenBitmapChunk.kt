@@ -56,15 +56,6 @@ class ScreenBitmapChunk private constructor(val compressor: Compressor) :
 
             return obj
         }
-
-        fun fromFullImage(scr: ScreenFullImage, compressor: Compressor): ScreenBitmapChunk {
-            return ScreenBitmapChunk(scr.getFullImage(), compressor)
-        }
-
-        fun fromRectangle(scr: ScreenRectangle, x: Int, y: Int, w: Int, h: Int, compressor: Compressor): ScreenBitmapChunk
-        {
-            return ScreenBitmapChunk(scr.getRectangle(x, y, w, h), compressor)
-        }
     }
 
     override fun getRawData(): ByteArray = compressedData

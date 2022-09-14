@@ -1,22 +1,40 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nataliapc.imagewizard.compressor.Pletter
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
+import org.nataliapc.imagewizard.compressor.Zx7MiniExtern
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import org.nataliapc.imagewizard.image.chunks.impl.ScreenBitmapChunk.Companion.ID_BASE
+import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
+import org.nataliapc.imagewizard.screens.enums.FileExt
+import java.io.InputStream
 import kotlin.test.assertEquals
 
 
+@ExperimentalUnsignedTypes
 internal class ScreenBitmapChunkTest {
 
     private val raw = Raw()
     private val rle = Rle()
     private val pletter = Pletter()
+    private val zx7 = Zx7MiniExtern()
 
+//    val fileStream = this::class.java.getResource("000.SC8").openStream()
+
+    @Test
+    fun constructor_Ok() {
+        val data = ByteArray(255*10) { idx -> (idx/10).toByte() }
+
+        val result = ScreenBitmapChunk(data, rle)
+
+        assertEquals(2 + rle.id, result.getId())
+        assertEquals(256*3, result.getRawData().size)
+    }
 
     @Test
     fun from_Ok() {
@@ -39,18 +57,6 @@ internal class ScreenBitmapChunkTest {
             byteArrayOf((ID_BASE+raw.id).toByte(), 4,0, 4,0, 0,0,0,0),
             result
         )
-    }
-
-    @Disabled
-    @Test
-    fun fromFullImage_Ok() {
-
-    }
-
-    @Disabled
-    @Test
-    fun fromRectangle_Ok() {
-
     }
 
     @Test

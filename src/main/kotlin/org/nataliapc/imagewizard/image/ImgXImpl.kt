@@ -6,6 +6,7 @@ import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.imagewizard.utils.toCharString
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -28,9 +29,9 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
 
         fun from(stream: DataInputStream): ImgX {
             val imgX = ImgXImpl(false)
-            imgX.header = String(stream.readNBytes(magicHeader.length))
-            if (!imgX.header.startsWith(magicHeader.subSequence(0, 4))) {
-                throw RuntimeException("Bad magic header reading IMX ($imgX.header)")
+            imgX.header = stream.readNBytes(magicHeader.length).toCharString()
+            if (!imgX.header.startsWith(magicHeader.subSequence(0, 3))) {
+                throw RuntimeException("Bad magic header reading IMX (${imgX.header})")
             }
             while (stream.available() > 0) {
                 imgX.add(Chunk.Factory.createFromStream(stream))
