@@ -26,8 +26,10 @@ import java.io.DataInputStream
  */
 class InfoChunk : ChunkAbstractImpl(128)
 {
-    private var infoVersion = 1
-    private var chunkCount = 0
+    var infoVersion = 1
+        private set
+    var chunkCount = 0
+        private set
     var originalWidth = 0
     var originalHeight = 0
     var pixelType = PixelType.Unspecified

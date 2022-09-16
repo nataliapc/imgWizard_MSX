@@ -11,17 +11,13 @@ import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
-import java.awt.*
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.lang.Integer.max
 import java.lang.RuntimeException
 import javax.imageio.ImageIO
-import javax.swing.*
 import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
-import java.awt.Image
 import java.awt.image.BufferedImage
 import java.lang.Integer.min
 
@@ -33,75 +29,45 @@ const val verbose = true
 
 fun main(args: Array<String>)
 {
-    if (args.isEmpty()) {
-        showHelp()
-    } else {
-        val time1 = System.currentTimeMillis()
-        when (args[0].lowercase()) {
-            "l" -> cmdL_ListContent(args)
-            "c", "cl" -> cmdCL_CreateImageIMx(args)
+    try {
+        if (args.isEmpty()) {
+            showHelp()
+        } else {
+            val time1 = System.currentTimeMillis()
+            when (args[0].lowercase()) {
+                "l" -> cmdL_ListContent(args)
+                "c", "cl" -> cmdCL_CreateImageIMx(args)
 //            "s" -> cmdS_CreateImageFromRectangle(args)
-            "gs" -> cmdGS_V9990ImageFromRectangle(args)
-            "r" -> cmdR_LocationRedirection(args)
-            "d" -> cmdD_RemoveChunkFromIMx(args)
-            "j" -> cmdJ_JoinImageFiles(args)
-//            "5a" -> cmd5A_TransformSC5toSC10(args)
-//            "ca" -> cmd5A_TransformSC12toSC10(args)
-            "v" -> cmdV_ViewImageIMx(args)
-            else -> showHelp()
-        }
-        if (verbose) {
-            val time2 = System.currentTimeMillis()
-            println("Time elapsed: ${"%.2f sec".format((time2-time1)/1000.0)}")
-        }
-    }
-}
-
-// j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3.IM?] ...
-fun cmdJ_JoinImageFiles(args: Array<String>)
-{
-    if (args.size < 3) {
-        showError("Insuficient argmuments")
-    }
-    val fileOut = File(args[1])
-
-    var index = 2
-    val imgx = ImgXImpl.from(getFile(args[index++]))
-    while (index < args.size) {
-        val toJoin = ImgXImpl.from(getFile(args[index++]))
-        for (i in 0 until toJoin.chunkCount()) {
-            val chunk = toJoin.get(i)
-            if (chunk !is InfoChunk) {
-                imgx.add(chunk)
+                "gs" -> cmdGS_V9990ImageFromRectangle(args)
+                "r" -> cmdR_LocationRedirection(args)
+                "d" -> cmdD_RemoveChunkFromIMx(args)
+                "j" -> cmdJ_JoinImageFiles(args)
+                "5a" -> cmd5A_TransformSC5toSC10(args)
+                "ca" -> cmdCA_TransformSC12toSC10(args)
+                "v" -> cmdV_ViewImageIMx(args)
+                else -> showHelp()
+            }
+            if (verbose) {
+                val time2 = System.currentTimeMillis()
+                println("Time elapsed: ${"%.2f sec".format((time2 - time1) / 1000.0)}")
             }
         }
-    }
-
-    println("### Saving file ${fileOut.name}")
-    val out = FileOutputStream(fileOut)
-    out.use {
-        out.write(imgx.build())
+    } catch (re: ImgWizardException) {
+        showError(re.message ?: "")
     }
 }
 
-// d <fileIn.IM?> <chunk_id>
-fun cmdD_RemoveChunkFromIMx(args: Array<String>)
+open class ImgWizardException(message: String, cmd: String = "") : RuntimeException(
+    "ERROR: $message${if (cmd.isBlank()) "" else ":\n\t"+commandLineOptions[cmd]}")
+class ArgumentException(cmd: String): ImgWizardException("Something wrong with arguments", cmd)
+class ArgumentOutOfRangeException(value: Int, cmd: String): ImgWizardException("Argument out of range [$value]", cmd)
+
+// l <file.IM?>
+private fun cmdL_ListContent(args: Array<String>)
 {
-    if (args.size != 3) {
-        showError("Bad argmuments number")
-    }
-    val chunkToRemove = checkNumericArg(args[2])
     val fileIn = getFile(args[1])
-    val imgx = ImgXImpl.from(fileIn)
-
-    println("    Removing chunk #$chunkToRemove")
-    imgx.remove(chunkToRemove)
-
-    println("### Saving file ${fileIn.name}")
-    val out = FileOutputStream(fileIn)
-    out.use {
-        out.write(imgx.build())
-    }
+    ImgXImpl.from(fileIn)
+        .printInfo()
 }
 
 // c[l] <fileIn.SC?> <lines> [compressor | transparent_color]
@@ -112,9 +78,10 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
     val linesIdx = 2
     val compressorIdx = 3
     val transpIdx = 3
+    val cmd = args[cmdIdx].lowercase()
 
     if (args.size < linesIdx+1 || args.size > compressorIdx+1) {
-        showError("Bad argmuments number: ${args.size}")
+        throw ArgumentException(cmd)
     }
     val fileIn = getFile(args[fileIdx], "Opening")
     val image = ScreenBitmapImpl.from(fileIn) as ScreenBitmapImpl
@@ -124,8 +91,8 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
     if (transparent == null && args.size == compressorIdx+1) {
         compressor = Compressor.Types.valueOf(args[compressorIdx].uppercase()).instance
     }
-    if (lines > image.height) {
-        throw RuntimeException("Parameter 'lines' exceeds input screen height")
+    if (lines < 0 || lines > image.height) {
+        throw ImgWizardException("Parameter 'lines' exceeds input screen height", cmd)
     }
     if (args[cmdIdx] == "cl") {
         TODO("CL option not yet implemented")
@@ -161,19 +128,14 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
     imgx.printInfo()
 }
 
-// l <file.IM?>
-private fun cmdL_ListContent(args: Array<String>)
-{
-    val fileIn = getFile(args[1])
-    ImgXImpl.from(fileIn)
-        .printInfo()
-}
-
 // gs <file.PNG> <colors> <compressor> [<sx> <sy> <nx> <ny> [<dx> <dy>]]
 fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
 {
+    val cmdIdx = 0
+    val cmd = args[cmdIdx].lowercase()
+
     if (args.size != 4 && args.size != 8 && args.size != 10) {
-        showError("Bad argmuments number: ${args.size}")
+        throw ArgumentException(cmd)
     }
     val fileIn = getFile(args[1], "Opening")
 
@@ -218,12 +180,15 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
 // r <fileOut.IM?> <target_loc>
 fun cmdR_LocationRedirection(args: Array<String>)
 {
+    val cmdIdx = 0
+    val cmd = args[cmdIdx].lowercase()
+
     if (args.size != 3) {
-        showError("Bad arguments number: ${args.size}")
+        throw ArgumentException(cmd)
     }
     val location = checkNumericArg(args[2])
     if (location < 0 || location > 255) {
-        showError("Location is out of range [0..255]")
+        throw ImgWizardException("Location is out of range [0..255]", cmd)
     }
 
     val fileOut = File(args[1])
@@ -237,9 +202,125 @@ fun cmdR_LocationRedirection(args: Array<String>)
     imgx.printInfo()
 }
 
+// d <fileIn.IM?> <chunk_id>
+fun cmdD_RemoveChunkFromIMx(args: Array<String>)
+{
+    val cmdIdx = 0
+    val cmd = args[cmdIdx].lowercase()
+
+    if (args.size != 3) {
+        throw ArgumentException(cmd)
+    }
+    val chunkToRemove = checkNumericArg(args[2])
+    val fileIn = getFile(args[1])
+    val imgx = ImgXImpl.from(fileIn)
+
+    println("    Removing chunk #$chunkToRemove")
+    imgx.remove(chunkToRemove)
+
+    println("### Saving file ${fileIn.name}")
+    val out = FileOutputStream(fileIn)
+    out.use {
+        out.write(imgx.build())
+    }
+}
+
+// j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3.IM?] ...
+fun cmdJ_JoinImageFiles(args: Array<String>)
+{
+    val cmdIdx = 0
+    val cmd = args[cmdIdx].lowercase()
+
+    if (args.size < 3) {
+        throw ArgumentException(cmd)
+    }
+    val fileOut = File(args[1])
+
+    var index = 2
+    val imgx = ImgXImpl.from(getFile(args[index++]))
+    while (index < args.size) {
+        val toJoin = ImgXImpl.from(getFile(args[index++]))
+        for (i in 0 until toJoin.chunkCount()) {
+            val chunk = toJoin.get(i)
+            if (chunk !is InfoChunk) {
+                imgx.add(chunk)
+            }
+        }
+    }
+
+    println("### Saving file ${fileOut.name}")
+    val out = FileOutputStream(fileOut)
+    out.use {
+        out.write(imgx.build())
+    }
+}
+
+// 5a <fileIn.SC5> <fileOut.SCA> [lines]
+fun cmd5A_TransformSC5toSC10(args: Array<String>) {
+    val cmdIdx = 0
+    val sc5Idx = 1
+    val scaIdx = 2
+    val linesIdx = 3
+    val cmd = args[cmdIdx].lowercase()
+
+    if (args.size < 3 || args.size > 4) {
+        throw ArgumentException(cmd)
+    }
+    val lines = if (args.size == 4) checkNumericArg(args[linesIdx]) else 212
+    if (lines !in 0..212) {
+        throw ArgumentOutOfRangeException(lines, cmd)
+    }
+    val sc5 = ScreenBitmapImpl.from(getFile(args[sc5Idx]))
+    val sca = ScreenBitmapImpl.SC10()
+    if (sc5 !is ScreenBitmapImpl.SC5) {
+        throw ImgWizardException("Input file might not be an SC5 file", cmd)
+    }
+
+    for (y in 0 until lines) {
+        for (x in 0..sc5.width) {
+            TODO()  //TODO
+        }
+    }
+
+    val fileOut = File(args[scaIdx])
+    sca.saveTo(fileOut)
+}
+
+// ca <fileIn.SCC> <fileOut.SCA> [lines]
+fun cmdCA_TransformSC12toSC10(args: Array<String>) {
+    val cmdIdx = 0
+    val sc12Idx = 1
+    val scaIdx = 2
+    val linesIdx = 3
+    val cmd = args[cmdIdx].lowercase()
+
+    if (args.size < 3 || args.size > 4) {
+        throw ArgumentException(cmd)
+    }
+    val lines = if (args.size == 4) checkNumericArg(args[linesIdx]) else 212
+    if (lines !in 0..212) {
+        throw ArgumentOutOfRangeException(lines, cmd)
+    }
+    val sc12 = ScreenBitmapImpl.from(getFile(args[sc12Idx]))
+    val sca = ScreenBitmapImpl.SC10()
+    if (sc12 !is ScreenBitmapImpl.SC12) {
+        throw ImgWizardException("Input file might not be an SC12 file", cmd)
+    }
+
+    for (y in 0 until lines) {
+        for (x in 0..sc12.width) {
+            TODO()  //TODO
+        }
+    }
+
+    val fileOut = File(args[scaIdx])
+    sca.saveTo(fileOut)
+}
+
 // v <file.IM?>
 fun cmdV_ViewImageIMx(args: Array<String>) {
     val fileIdx = 1
+
     val fileIn = getFile(args[fileIdx], "Opening")
     var infoChunk: InfoChunk? = null
     val origImg: BufferedImage = if (canReadImageExtension(fileIn.extension)) {
@@ -258,10 +339,10 @@ private fun getFile(filename: String, verb: String = "Reading"): File
     val file = File(filename)
     println("### $verb file ${file.name}")
     if (!file.exists()) {
-        showError("ERROR: file not exists...")
+        throw ImgWizardException("File not exists...")
     }
     if (!file.isFile) {
-        showError("ERROR: input file is not a file...")
+        throw ImgWizardException("Input file is not a file...")
     }
     return file
 }
@@ -363,8 +444,8 @@ private val commandLineOptions = hashMapOf<String, String>(
     "r" to "$appname r <fileOut.IM?> <target_loc>",
     "d" to "$appname d <fileIn.IM?> <chunk_id>",
     "j" to "$appname j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3] ...",
-    "5a" to "$appname 5a <fileIn.SC5> <fileOut.SCA> <lines>",
-    "ca" to "$appname ca <fileIn.SCC> <fileOut.SCA> <lines>"
+    "5a" to "$appname 5a <fileIn.SC5> <fileOut.SCA> [lines]",
+    "ca" to "$appname ca <fileIn.SCC> <fileOut.SCA> [lines]"
 )
 
 private fun showHelp(exit: Boolean = true)

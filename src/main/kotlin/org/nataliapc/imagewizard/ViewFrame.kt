@@ -11,6 +11,22 @@ import javax.imageio.ImageIO
 import javax.swing.*
 import kotlin.system.exitProcess
 import javax.swing.KeyStroke
+import javax.swing.BoxLayout
+import javax.swing.JPanel
+import javax.swing.border.EmptyBorder
+import javax.swing.border.TitledBorder
+import java.awt.GridBagConstraints
+import java.awt.Insets
+import javax.swing.border.CompoundBorder
+
+
+
+
+
+
+
+
+
 
 
 class ViewFrame(
@@ -20,44 +36,133 @@ class ViewFrame(
     private val origImage: BufferedImage
 ) : JFrame(), KeyListener
 {
+    private val maxZoom = 8
+
     private var scaledImage: Image
-    private var zoomFactor = 2
+    private var zoomFactor = 1
 
     private var picLabel: JLabel
+    private var scroller: JScrollPane
+    private lateinit var panelInfo: JPanel
 
     init {
-        updateTitle()
+        title = appName
         addKeyListener(this)
+        defaultCloseOperation = EXIT_ON_CLOSE
 
-        //JMenu
+        //MainPanel
+        val mainPanel = JPanel()
+        mainPanel.layout = BoxLayout(mainPanel, BoxLayout.X_AXIS)
+        add(mainPanel)
+
+        //JMenuBar menuBar
         val menuBar = createMenuBar()
+        add(menuBar, BorderLayout.NORTH)
 
-        //JLabel Picture
+        //JLabel picLabel
         picLabel = JLabel()
-        picLabel.addNotify()
-        scaledImage = scaleImage(picLabel)
 
-        //JPanel
-        val jPanel = JPanel()
-        jPanel.background = Color.DARK_GRAY
-        jPanel.layout = BorderLayout()
-        jPanel.add(picLabel, BorderLayout.CENTER)
+        //JPanel picPanel
+        val picPanel = JPanel()
+        picPanel.background = Color.DARK_GRAY
+        picPanel.layout = BorderLayout(10, 10)
+        picPanel.add(picLabel, BorderLayout.CENTER)
 
-        //JScrollPane
-        val scroller = JScrollPane(jPanel)
+        //JScrollPane scroller
+        scroller = JScrollPane(picPanel)
+        scroller.border = TitledBorder("Parent Panel")
+        mainPanel.add(scroller, BorderLayout.CENTER)
+
+        if (infoChunk != null) {
+            panelInfo = createInfoPanel(infoChunk)
+            mainPanel.add(panelInfo, BorderLayout.NORTH)
+        }
 
         //JFrame
-        this.title = title
-        defaultCloseOperation = EXIT_ON_CLOSE
-        add(menuBar, BorderLayout.NORTH)
-        add(scroller, BorderLayout.CENTER)
-        pack()
+        updateTitle()
+        scaledImage = scaleImage(origImage)
+        updateImage(scaledImage, true)
+
         setLocationRelativeTo(null)
         isVisible = true
+
+        SwingUtilities.invokeLater {
+            Thread.sleep(250)
+            minimumSize = size
+        }
+    }
+
+    private fun updateImage(image: Image, doPack: Boolean) {
+        picLabel.icon = ImageIcon(image)
+        if (doPack) pack()
     }
 
     private fun updateTitle() {
-        title = "$file.name (zoom x$zoomFactor) - $appName"
+        val titledBorder = TitledBorder("${file.name} (zoom x$zoomFactor)")
+        titledBorder.titleJustification = TitledBorder.RIGHT
+        scroller.border = titledBorder
+    }
+
+    private fun createInfoPanel(info: InfoChunk): JPanel {
+        val panel = JPanel()
+        panel.layout = BoxLayout(panel, BoxLayout.Y_AXIS)
+        panel.border = EmptyBorder(10,10,10,10)
+        panel.size.width = 500
+
+        val title = JLabel("Image metadata:")
+        title.font = title.font.deriveFont(title.font.style or Font.BOLD)
+        title.border = CompoundBorder(title.border, EmptyBorder(0,0,10,0))
+        panel.add(title, BorderLayout.NORTH)
+
+        val subPanel = JPanel()
+        subPanel.layout = GridBagLayout()
+        subPanel.alignmentX = LEFT_ALIGNMENT
+        subPanel.alignmentY = TOP_ALIGNMENT
+        panel.add(subPanel, BorderLayout.NORTH)
+
+        var row = 0
+
+        subPanel.add(JLabel("Info version:"), createGbc(0,row))
+        subPanel.add(JLabel(infoChunk!!.infoVersion.toString()), createGbc(1,row++))
+
+        subPanel.add(JLabel("Chunk count:"), createGbc(0,row))
+        subPanel.add(JLabel(infoChunk.chunkCount.toString()), createGbc(1,row++))
+
+        subPanel.add(JSeparator(), createGbc(0,row++))
+
+        subPanel.add(JLabel("Original Width:"), createGbc(0,row))
+        subPanel.add(JLabel(infoChunk.originalWidth.toString()+" px"), createGbc(1,row++))
+
+        subPanel.add(JLabel("Original Height:"), createGbc(0,row))
+        subPanel.add(JLabel(infoChunk.originalHeight.toString()+" px"), createGbc(1,row++))
+
+        subPanel.add(JSeparator(), createGbc(0,row++))
+
+        subPanel.add(JLabel("Pixel type:"), createGbc(0,row))
+        subPanel.add(JLabel(infoChunk.pixelType.name), createGbc(1,row++))
+
+        subPanel.add(JLabel("Palette type:"), createGbc(0,row))
+        subPanel.add(JLabel(infoChunk.paletteType.name), createGbc(1,row++))
+
+        subPanel.add(JLabel("Chipset:"), createGbc(0,row))
+        subPanel.add(JLabel(infoChunk.chipset.name), createGbc(1,row++))
+
+        subPanel.add(JLabel(""), createGbc(0,row, true))
+        return panel
+    }
+
+    private fun createGbc(x: Int, y: Int, last: Boolean = false): GridBagConstraints {
+        val gbc = GridBagConstraints()
+        gbc.gridx = x
+        gbc.gridy = y
+        gbc.gridwidth = 1
+        gbc.gridheight = 1
+        gbc.anchor = if (x == 0) GridBagConstraints.WEST else GridBagConstraints.EAST
+        gbc.fill = GridBagConstraints.HORIZONTAL
+        gbc.insets = Insets(3, 3, 0, 0)
+        gbc.weightx = if (x == 0) 0.1 else 1.0
+        if (last) gbc.weighty = 100.0
+        return gbc
     }
 
     private fun createMenuBar(): JMenuBar {
@@ -127,14 +232,18 @@ class ViewFrame(
     }
 
     private fun doZoomIn() {
-        zoomFactor = (zoomFactor + 1).coerceAtMost(8)
-        scaledImage = scaleImage(picLabel)
+        if (zoomFactor == maxZoom) return
+        zoomFactor = (zoomFactor + 1).coerceAtMost(maxZoom)
+        scaledImage = scaleImage(origImage)
+        updateImage(scaledImage, true)
         updateTitle()
     }
 
     private fun doZoomOut() {
+        if (zoomFactor == 1) return
         zoomFactor = (zoomFactor - 1).coerceAtLeast(1)
-        scaledImage = scaleImage(picLabel)
+        scaledImage = scaleImage(origImage)
+        updateImage(scaledImage, true)
         updateTitle()
     }
 
@@ -143,13 +252,11 @@ class ViewFrame(
         exitProcess(0)
     }
 
-    private fun scaleImage(label: JLabel): Image {
+    private fun scaleImage(image: Image): Image {
+        if (zoomFactor == 1) return image
         val zoomWidth = origImage.width * zoomFactor
         val zoomHeight = origImage.height * zoomFactor
-        val image = origImage.getScaledInstance(zoomWidth, zoomHeight, Image.SCALE_FAST)
-        label.icon = ImageIcon(image)
-        pack()
-        return image
+        return image.getScaledInstance(zoomWidth, zoomHeight, Image.SCALE_FAST)
     }
 
     private fun fileToSave(title: String): File {
