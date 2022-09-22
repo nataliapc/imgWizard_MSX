@@ -1,6 +1,8 @@
-package org.nataliapc.imagewizard.image
+package org.nataliapc.imagewizard.image.impl
 
+import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
+import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
@@ -101,7 +103,7 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
         return output.toByteArray()
     }
 
-    override fun render(): BufferedImage {
+    override fun render(verbose: Boolean): BufferedImage {
         var width = 256
         var height = 212
         var colorType = PixelType.BD8
@@ -121,8 +123,11 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
             colorType,
             paletteType)
 
-        chunks.forEach {
-            it.printInfo()
+        chunks.forEachIndexed { index,it ->
+            if (verbose) {
+                print("Rendering ")
+                it.printInfoWithOrdinal(index)
+            }
             img.render(it)
         }
 
@@ -130,11 +135,20 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
     }
 
     override fun printInfo() {
+        var uncompressedDataSize = 0
+        var compressedDataSize = 0
+
         println("### Image type: $header")
         chunks.forEachIndexed { index, it ->
-            print("    CHUNK #$index: ")
-            it.printInfo()
+            print("    ")
+            it.printInfoWithOrdinal(index)
+            if (it is ChunkData) {
+                compressedDataSize += it.getRawData().size
+                uncompressedDataSize += it.getUncompressedData().size
+            }
         }
+        val percent = "%.2f".format(compressedDataSize * 100.0 / uncompressedDataSize)
+        println("Total data size: $uncompressedDataSize bytes. Total compressed size: $compressedDataSize [$percent%]")
     }
 
 }

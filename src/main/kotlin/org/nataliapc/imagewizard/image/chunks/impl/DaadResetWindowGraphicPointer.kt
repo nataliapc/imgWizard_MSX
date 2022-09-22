@@ -44,7 +44,7 @@ class DaadResetWindowGraphicPointer() : ChunkAbstractImpl(16)
         return out.toByteArray()
     }
 
-    override fun printInfo() {
-        println("[${getId()}] DAAD Reset Window Graphic Pointer")
+    override fun getInfo(): Array<String> {
+        return arrayOf("DAAD Reset Window Graphic Pointer")
     }
 }

@@ -47,7 +47,9 @@ interface Chunk
     fun getId(): Int
     fun setAuxData(value: Int): Chunk
     fun build(): ByteArray
+    fun getInfo(): Array<String>
     fun printInfo()
+    fun printInfoWithOrdinal(ordinal: Int)
 }
 
 interface ChunkCompanion

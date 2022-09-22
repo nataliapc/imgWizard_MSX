@@ -72,6 +72,6 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
     }
 
     override fun printInfo() {
-        println("[${getId()}] V9990 ${compressor.javaClass.simpleName.uppercase()} Data Command: $auxData bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/auxData}%]")
+        println("V9990 ${compressor.javaClass.simpleName.uppercase()} Data Command: $auxData bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/auxData}%]")
     }
 }

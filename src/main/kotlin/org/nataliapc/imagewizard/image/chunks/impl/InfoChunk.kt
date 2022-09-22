@@ -78,13 +78,15 @@ class InfoChunk : ChunkAbstractImpl(128)
         return ensemble(out.toByteArray())
     }
 
-    override fun printInfo() {
-        println("[${getId()}] Image Info v$infoVersion\n"+
-                "        Chunk count ...... $chunkCount\n"+
-                "        Original Width ... $originalWidth\n"+
-                "        Original Height .. $originalHeight\n"+
-                "        Pixel Type ....... ${pixelType.name}\n"+
-                "        Palette Type ..... ${paletteType.name}\n"+
-                "        Chipset Type ..... ${chipset.name}")
+    override fun getInfo(): Array<String> {
+        return arrayOf(
+            "Image Info v$infoVersion",
+            "        Chunk count ...... $chunkCount",
+            "        Original Width ... $originalWidth",
+            "        Original Height .. $originalHeight",
+            "        Pixel Type ....... ${pixelType.name}",
+            "        Palette Type ..... ${paletteType.name}",
+            "        Chipset Type ..... ${chipset.name}"
+        )
     }
 }

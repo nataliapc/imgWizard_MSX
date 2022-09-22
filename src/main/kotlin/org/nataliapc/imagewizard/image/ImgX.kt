@@ -14,6 +14,6 @@ interface ImgX
     fun removeLast(): ImgX
     fun chunkCount(): Int
     fun build(withInfoChunk: Boolean = true): ByteArray
-    fun render(): BufferedImage
+    fun render(verbose: Boolean = true): BufferedImage
     fun printInfo()
 }

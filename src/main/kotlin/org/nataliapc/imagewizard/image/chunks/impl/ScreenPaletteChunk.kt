@@ -45,7 +45,7 @@ class ScreenPaletteChunk(val palette: ByteArray) : ChunkAbstractImpl(1)
     }
 
     override fun printInfo() {
-        println("[${getId()}] Screen Palette")
+        println("Screen Palette")
     }
 
     private fun checkPalette() {

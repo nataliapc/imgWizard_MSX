@@ -53,7 +53,7 @@ class PauseChunk(ticks: Int) : ChunkAbstractImpl(19)
         return out.toByteArray()
     }
 
-    override fun printInfo() {
-        println("[${getId()}] Pause Chunk: $auxData ticks (~${"%.1f".format(auxData/50.0)} sec)")
+    override fun getInfo(): Array<String> {
+        return arrayOf("Pause Chunk: $auxData ticks (~${"%.1f".format(auxData/50.0)} sec)")
     }
 }

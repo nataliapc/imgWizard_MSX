@@ -68,6 +68,6 @@ class ScreenBitmapChunk private constructor(val compressor: Compressor) :
     }
 
     override fun printInfo() {
-        println("[${getId()}] Screen Bitmap ${compressor.javaClass.simpleName.uppercase()} Data: $auxData bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/auxData}%]")
+        println("Screen Bitmap ${compressor.javaClass.simpleName.uppercase()} Data: $auxData bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/auxData}%]")
     }
 }

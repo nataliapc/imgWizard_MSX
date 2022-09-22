@@ -53,7 +53,7 @@ class DaadSkipBytes(skipBytes: Int) : ChunkAbstractImpl(18)
         return out.toByteArray()
     }
 
-    override fun printInfo() {
-        println("[${getId()}] DAAD Skip Bytes ($auxData bytes)")
+    override fun getInfo(): Array<String> {
+        return arrayOf("DAAD Skip Bytes ($auxData bytes)")
     }
 }

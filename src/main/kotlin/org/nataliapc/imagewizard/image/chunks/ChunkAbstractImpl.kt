@@ -33,8 +33,19 @@ abstract class ChunkAbstractImpl(private val id: Int): Chunk
         return this
     }
 
+    override fun getInfo(): Array<String> {
+        return arrayOf("**** UNKNOWN CHUNK TYPE ****")
+    }
+
     override fun printInfo() {
-        println("    ID $id: **** UNKNOWN CHUNK TYPE ****")
+        getInfo().forEach {
+            println(it)
+        }
+    }
+
+    override fun printInfoWithOrdinal(ordinal: Int) {
+        print("CHUNK #$ordinal [id:${getId()}] ")
+        printInfo()
     }
 
     protected fun checkId(id: Int) {

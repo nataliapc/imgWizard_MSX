@@ -44,7 +44,7 @@ class DaadClearWindow() : ChunkAbstractImpl(17)
         return out.toByteArray()
     }
 
-    override fun printInfo() {
-        println("[${getId()}] DAAD Clear Window")
+    override fun getInfo(): Array<String> {
+        return arrayOf("DAAD Clear Window")
     }
 }

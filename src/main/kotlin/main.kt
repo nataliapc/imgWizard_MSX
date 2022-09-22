@@ -3,7 +3,7 @@ import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
-import org.nataliapc.imagewizard.image.ImgXImpl
+import org.nataliapc.imagewizard.image.impl.ImgXImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl

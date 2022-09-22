@@ -18,15 +18,11 @@ import javax.swing.border.TitledBorder
 import java.awt.GridBagConstraints
 import java.awt.Insets
 import javax.swing.border.CompoundBorder
+import java.awt.Font
+import java.util.*
 
-
-
-
-
-
-
-
-
+import javax.swing.UIManager
+import javax.swing.plaf.FontUIResource
 
 
 class ViewFrame(
@@ -46,6 +42,7 @@ class ViewFrame(
     private lateinit var panelInfo: JPanel
 
     init {
+        setUIFont(FontUIResource("Arial", Font.PLAIN, 12))
         title = appName
         addKeyListener(this)
         defaultCloseOperation = EXIT_ON_CLOSE
@@ -92,6 +89,15 @@ class ViewFrame(
         }
     }
 
+    fun setUIFont(f: FontUIResource?) {
+        val keys: Enumeration<*> = UIManager.getDefaults().keys()
+        while (keys.hasMoreElements()) {
+            val key = keys.nextElement()
+            val value = UIManager.get(key)
+            if (value is FontUIResource) UIManager.put(key, f)
+        }
+    }
+
     private fun updateImage(image: Image, doPack: Boolean) {
         picLabel.icon = ImageIcon(image)
         if (doPack) pack()
@@ -111,8 +117,9 @@ class ViewFrame(
 
         val title = JLabel("Image metadata:")
         title.font = title.font.deriveFont(title.font.style or Font.BOLD)
-        title.border = CompoundBorder(title.border, EmptyBorder(0,0,10,0))
         panel.add(title, BorderLayout.NORTH)
+
+        panel.add(JLabel(" "), BorderLayout.NORTH)
 
         val subPanel = JPanel()
         subPanel.layout = GridBagLayout()
@@ -128,7 +135,7 @@ class ViewFrame(
         subPanel.add(JLabel("Chunk count:"), createGbc(0,row))
         subPanel.add(JLabel(infoChunk.chunkCount.toString()), createGbc(1,row++))
 
-        subPanel.add(JSeparator(), createGbc(0,row++))
+        subPanel.add(JLabel(" "), createGbc(0,row++))
 
         subPanel.add(JLabel("Original Width:"), createGbc(0,row))
         subPanel.add(JLabel(infoChunk.originalWidth.toString()+" px"), createGbc(1,row++))
@@ -136,7 +143,7 @@ class ViewFrame(
         subPanel.add(JLabel("Original Height:"), createGbc(0,row))
         subPanel.add(JLabel(infoChunk.originalHeight.toString()+" px"), createGbc(1,row++))
 
-        subPanel.add(JSeparator(), createGbc(0,row++))
+        subPanel.add(JLabel(" "), createGbc(0,row++))
 
         subPanel.add(JLabel("Pixel type:"), createGbc(0,row))
         subPanel.add(JLabel(infoChunk.pixelType.name), createGbc(1,row++))
@@ -182,6 +189,8 @@ class ViewFrame(
             mItemSaveScaled.addActionListener { doSaveScaledImage() }
             mItemSaveScaled.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_S, KeyEvent.CTRL_DOWN_MASK or KeyEvent.SHIFT_DOWN_MASK)
             menuFile.add(mItemSaveScaled)
+
+            menuFile.add(JSeparator())
 
             val mItemExit = JMenuItem("Exit", 'x'.code)
             mItemExit.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_X, KeyEvent.ALT_DOWN_MASK)

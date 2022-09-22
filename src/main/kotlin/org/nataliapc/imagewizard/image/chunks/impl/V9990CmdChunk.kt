@@ -137,7 +137,7 @@ open class V9990CmdChunk(
     }
 
     override fun printInfo() {
-        println("[${getId()}] V9990 Command($sx,$sy, $dx,$dy, $nx,$ny, $arg, ${log.name}, 0x${Integer.toHexString(mask)}, $foreColor,$backColor, ${cmd.name})")
+        println("V9990 Command($sx,$sy, $dx,$dy, $nx,$ny, $arg, ${log.name}, 0x${Integer.toHexString(mask)}, $foreColor,$backColor, ${cmd.name})")
     }
 
     class Stop : V9990CmdChunk(0,0,0,0,0,0,0, LogicalOp.None,0,0, 0, Command.Stop)
