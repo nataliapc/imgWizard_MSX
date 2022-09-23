@@ -1,9 +1,8 @@
-package org.nataliapc.imagewizard.image.impl
+package org.nataliapc.imagewizard.image
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
-import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.impl.DaadClearWindow
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 import java.lang.RuntimeException

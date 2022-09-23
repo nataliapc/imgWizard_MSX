@@ -13,7 +13,7 @@ interface Chunk
 {
     class Factory {
         companion object {
-            fun createFromStream(stream: DataInputStream): Chunk {
+            fun from(stream: DataInputStream): Chunk {
                 val id = stream.readUnsignedByte()
                 val len = stream.readUnsignedShortLE()
                 val buffer = DataByteArrayOutputStream()

@@ -46,7 +46,7 @@ interface ScreenBitmap : ScreenMSX {
 
 interface ScreenTiled: ScreenMSX
 
-sealed class ScreenBitmapImpl(
+internal sealed class ScreenBitmapImpl(
     val screenMode: ScreenModeType,
     final override val pixelType: PixelType,
     final override val paletteType: PaletteType,

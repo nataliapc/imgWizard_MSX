@@ -3,7 +3,7 @@ import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
-import org.nataliapc.imagewizard.image.impl.ImgXImpl
+import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.screens.ScreenBitmap
@@ -67,7 +67,7 @@ class ArgumentOutOfRangeException(value: Int, cmd: String): ImgWizardException("
 private fun cmdL_ListContent(args: Array<String>)
 {
     val fileIn = getFile(args[1])
-    ImgXImpl.from(fileIn)
+    ImgX.Factory.from(fileIn)
         .printInfo()
 }
 
@@ -99,7 +99,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         TODO("CL option not yet implemented")
     }
 
-    val imgx = ImgXImpl()
+    val imgx = ImgX.Factory.getInstance()
     val infoChunk = imgx.get(0) as InfoChunk
     infoChunk.originalWidth = image.width
     infoChunk.originalHeight = image.height
@@ -151,7 +151,7 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     val dx = if (args.size <= 8) sx else checkNumericArg(args[8])
     val dy = if (args.size <= 8) sy else checkNumericArg(args[9])
 
-    val imgx = ImgXImpl().add(V9990CmdChunk.RectangleToSend(dx, dy, nx, ny))
+    val imgx = ImgX.Factory.getInstance().add(V9990CmdChunk.RectangleToSend(dx, dy, nx, ny))
     val infoChunk = imgx.get(0) as InfoChunk
     infoChunk.originalWidth = image.width
     infoChunk.originalHeight = image.height
@@ -196,7 +196,7 @@ fun cmdR_LocationRedirection(args: Array<String>)
     println("### Creating file ${fileOut.name}")
 
     val out = FileOutputStream(fileOut)
-    val imgx = ImgXImpl(false).add(DaadRedirectToImage(location.toShort()))
+    val imgx = ImgX.Factory.getInstance(false).add(DaadRedirectToImage(location.toShort()))
     out.use {
         out.write(imgx.build())
     }
@@ -214,7 +214,7 @@ fun cmdD_RemoveChunkFromIMx(args: Array<String>)
     }
     val chunkToRemove = checkNumericArg(args[2])
     val fileIn = getFile(args[1])
-    val imgx = ImgXImpl.from(fileIn)
+    val imgx = ImgX.Factory.from(fileIn)
 
     println("    Removing chunk #$chunkToRemove")
     imgx.remove(chunkToRemove)
@@ -238,9 +238,9 @@ fun cmdJ_JoinImageFiles(args: Array<String>)
     val fileOut = File(args[1])
 
     var index = 2
-    val imgx = ImgXImpl.from(getFile(args[index++]))
+    val imgx = ImgX.Factory.from(getFile(args[index++]))
     while (index < args.size) {
-        val toJoin = ImgXImpl.from(getFile(args[index++]))
+        val toJoin = ImgX.Factory.from(getFile(args[index++]))
         for (i in 0 until toJoin.chunkCount()) {
             val chunk = toJoin.get(i)
             if (chunk !is InfoChunk) {
@@ -327,7 +327,7 @@ fun cmdV_ViewImageIMx(args: Array<String>) {
     val origImg: BufferedImage = if (canReadImageExtension(fileIn.extension)) {
         ImageIO.read(FileInputStream(fileIn))
     } else {
-        val imgx = ImgXImpl.from(fileIn)
+        val imgx = ImgX.Factory.from(fileIn)
         infoChunk = imgx.getInfoChunk()
         imgx.render()
     }

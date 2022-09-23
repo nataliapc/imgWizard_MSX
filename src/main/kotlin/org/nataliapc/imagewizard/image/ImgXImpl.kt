@@ -1,6 +1,5 @@
-package org.nataliapc.imagewizard.image.impl
+package org.nataliapc.imagewizard.image
 
-import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.image.chunks.ChunkPalette
@@ -14,10 +13,11 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.File
+import java.io.InputStream
 import java.lang.RuntimeException
 
 
-class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
+internal class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
     private var header: String = magicHeader
     private val chunks = mutableListOf<Chunk>()
     private var infoChunk: InfoChunk? = null
@@ -29,14 +29,15 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
             return from(DataByteArrayInputStream(file.inputStream()))
         }
 
-        fun from(stream: DataInputStream): ImgX {
+        fun from(inputStream: InputStream): ImgX {
+            val stream = DataInputStream(inputStream)
             val imgX = ImgXImpl(false)
             imgX.header = stream.readNBytes(magicHeader.length).toCharString()
             if (!imgX.header.startsWith(magicHeader.subSequence(0, 3))) {
                 throw RuntimeException("Bad magic header reading IMX (${imgX.header})")
             }
             while (stream.available() > 0) {
-                imgX.add(Chunk.Factory.createFromStream(stream))
+                imgX.add(Chunk.Factory.from(stream))
             }
             // Determine InfoChunk from magicHeader
             imgX.infoChunk = InfoChunk.fromMagic(imgX.header)
