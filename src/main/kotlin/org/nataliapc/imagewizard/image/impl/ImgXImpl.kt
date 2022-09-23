@@ -3,6 +3,7 @@ package org.nataliapc.imagewizard.image.impl
 import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkData
+import org.nataliapc.imagewizard.image.chunks.ChunkPalette
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
@@ -16,8 +17,7 @@ import java.io.File
 import java.lang.RuntimeException
 
 
-class ImgXImpl(withInfoChunk: Boolean = true): ImgX
-{
+class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
     private var header: String = magicHeader
     private val chunks = mutableListOf<Chunk>()
     private var infoChunk: InfoChunk? = null
@@ -38,6 +38,9 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
             while (stream.available() > 0) {
                 imgX.add(Chunk.Factory.createFromStream(stream))
             }
+            // Determine InfoChunk from magicHeader
+            imgX.infoChunk = InfoChunk.fromMagic(imgX.header)
+            // Get InfoChunk if any
             val chunk = imgX.get(0)
             if (chunk is InfoChunk) {
                 imgX.infoChunk = chunk
@@ -89,8 +92,7 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
         return chunks.size
     }
 
-    override fun build(withInfoChunk: Boolean): ByteArray
-    {
+    override fun build(withInfoChunk: Boolean): ByteArray {
         val output = ByteArrayOutputStream(0)
         output.write(magicHeader.toByteArray())
 
@@ -106,24 +108,56 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
     override fun render(verbose: Boolean): BufferedImage {
         var width = 256
         var height = 212
-        var colorType = PixelType.BD8
+        var pixelType = PixelType.BD8
         var paletteType = PaletteType.GRB332
 
         if (infoChunk != null) {
             width = infoChunk!!.originalWidth
             height = infoChunk!!.originalHeight
-            colorType = infoChunk!!.pixelType
+            pixelType = infoChunk!!.pixelType
             paletteType = infoChunk!!.paletteType
         } else {
             println("*** Unable to obtain specific data from InfoChunk. Get defaults ***")
         }
 
+        var chunkPalette: ChunkPalette? = null
+        var chunkIndex = 0
+
+        // Search first palette chunk if exists
+        chunks.forEachIndexed { index, it ->
+            if (it is ChunkPalette) {
+                chunkPalette = it
+                chunkIndex = index
+                return@forEachIndexed
+            }
+        }
+
         val img = ImageWrapperImpl.from(
             BufferedImage(width, height, BufferedImage.TYPE_INT_RGB),
-            colorType,
-            paletteType)
+            pixelType,
+            paletteType
+        )
 
-        chunks.forEachIndexed { index,it ->
+        //Render InfoBlock
+        if (infoChunk != null && get(0) !is InfoChunk) {
+            img.render(infoChunk!!)
+            if (verbose) {
+                print("Rendering ")
+                infoChunk?.printInfo()
+            }
+        }
+
+        //Render first palette if any
+        if (chunkPalette != null) {
+            if (verbose) {
+                print("Rendering ")
+                (chunkPalette as Chunk).printInfoWithOrdinal(chunkIndex)
+            }
+            img.render(chunkPalette as Chunk)
+        }
+
+        // Render all the chunks
+        chunks.forEachIndexed { index, it ->
             if (verbose) {
                 print("Rendering ")
                 it.printInfoWithOrdinal(index)
@@ -150,5 +184,4 @@ class ImgXImpl(withInfoChunk: Boolean = true): ImgX
         val percent = "%.2f".format(compressedDataSize * 100.0 / uncompressedDataSize)
         println("Total data size: $uncompressedDataSize bytes. Total compressed size: $compressedDataSize [$percent%]")
     }
-
 }

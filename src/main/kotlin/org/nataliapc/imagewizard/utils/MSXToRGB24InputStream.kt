@@ -14,6 +14,7 @@ class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelTyp
 
     private var lastBitRead = 0
     private var currentByte: Int = 0
+    private var currentPalette: IntArray? = null
 
     init {
         if (pixelType.bpp !in intArrayOf(2,4,8,16)) {
@@ -22,12 +23,31 @@ class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelTyp
         resetRead()
     }
 
+    fun setPalette(palette: ByteArray) {
+        if (32 != palette.size) {
+            throw RuntimeException("Expected palette size is 32 but is ${palette.size}")
+        }
+
+        val colorList = mutableListOf<Int>()
+        DataByteArrayInputStream(palette).use {
+            for (index in 0..15) {
+                val originalColor = it.readUnsignedShortLE()
+                colorList.add(paletteType.toRGB24(originalColor))
+            }
+        }
+        currentPalette = colorList.toIntArray()
+    }
+
     fun readColor(): Int {
         return when {
             pixelType.isShortSized() -> paletteType.toRGB24(readUnsignedShortLE())
             pixelType.isByteSized() -> {
                 if (pixelType.indexed || isIndexedBD8())
-                    unpackIndexed()
+                    if (currentPalette != null) {
+                        currentPalette!![unpackIndexed()]
+                    } else {
+                        unpackIndexed()
+                    }
                 else
                     paletteType.toRGB24(readUnsignedByte())
             }

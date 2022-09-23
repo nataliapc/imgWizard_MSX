@@ -1,6 +1,7 @@
 package org.nataliapc.imagewizard
 
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
+import org.nataliapc.imagewizard.screens.enums.PixelType
 import java.awt.*
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
@@ -17,7 +18,6 @@ import javax.swing.border.EmptyBorder
 import javax.swing.border.TitledBorder
 import java.awt.GridBagConstraints
 import java.awt.Insets
-import javax.swing.border.CompoundBorder
 import java.awt.Font
 import java.util.*
 
@@ -119,7 +119,9 @@ class ViewFrame(
         title.font = title.font.deriveFont(title.font.style or Font.BOLD)
         panel.add(title, BorderLayout.NORTH)
 
-        panel.add(JLabel(" "), BorderLayout.NORTH)
+        var row = 0
+
+        panel.add(getLabelSeparator(), BorderLayout.NORTH)
 
         val subPanel = JPanel()
         subPanel.layout = GridBagLayout()
@@ -127,32 +129,35 @@ class ViewFrame(
         subPanel.alignmentY = TOP_ALIGNMENT
         panel.add(subPanel, BorderLayout.NORTH)
 
-        var row = 0
-
         subPanel.add(JLabel("Info version:"), createGbc(0,row))
-        subPanel.add(JLabel(infoChunk!!.infoVersion.toString()), createGbc(1,row++))
+        subPanel.add(JLabel(info.infoVersion.toString()), createGbc(1,row++))
 
         subPanel.add(JLabel("Chunk count:"), createGbc(0,row))
-        subPanel.add(JLabel(infoChunk.chunkCount.toString()), createGbc(1,row++))
+        subPanel.add(JLabel(info.chunkCount.toString()), createGbc(1,row++))
 
-        subPanel.add(JLabel(" "), createGbc(0,row++))
+        subPanel.add(getLabelSeparator(), createGbc(0,row++))
 
         subPanel.add(JLabel("Original Width:"), createGbc(0,row))
-        subPanel.add(JLabel(infoChunk.originalWidth.toString()+" px"), createGbc(1,row++))
+        subPanel.add(JLabel(info.originalWidth.toString()+" px"), createGbc(1,row++))
 
         subPanel.add(JLabel("Original Height:"), createGbc(0,row))
-        subPanel.add(JLabel(infoChunk.originalHeight.toString()+" px"), createGbc(1,row++))
+        subPanel.add(JLabel(info.originalHeight.toString()+" px"), createGbc(1,row++))
 
-        subPanel.add(JLabel(" "), createGbc(0,row++))
+        if (info.pixelType != PixelType.Unspecified) {
+            subPanel.add(JLabel("Colors:"), createGbc(0,row))
+            subPanel.add(JLabel("${info.pixelType.colors}"), createGbc(1,row++))
+        }
+
+        subPanel.add(getLabelSeparator(), createGbc(0,row++))
 
         subPanel.add(JLabel("Pixel type:"), createGbc(0,row))
-        subPanel.add(JLabel(infoChunk.pixelType.name), createGbc(1,row++))
+        subPanel.add(JLabel(info.pixelType.name), createGbc(1,row++))
 
         subPanel.add(JLabel("Palette type:"), createGbc(0,row))
-        subPanel.add(JLabel(infoChunk.paletteType.name), createGbc(1,row++))
+        subPanel.add(JLabel(info.paletteType.name), createGbc(1,row++))
 
         subPanel.add(JLabel("Chipset:"), createGbc(0,row))
-        subPanel.add(JLabel(infoChunk.chipset.name), createGbc(1,row++))
+        subPanel.add(JLabel(info.chipset.name), createGbc(1,row++))
 
         subPanel.add(JLabel(""), createGbc(0,row, true))
         return panel
@@ -170,6 +175,12 @@ class ViewFrame(
         gbc.weightx = if (x == 0) 0.1 else 1.0
         if (last) gbc.weighty = 100.0
         return gbc
+    }
+
+    private fun getLabelSeparator(): JLabel {
+        val labelSeparator = JLabel(" ")
+        labelSeparator.font = labelSeparator.font.deriveFont(labelSeparator.font.size / 2f)
+        return labelSeparator
     }
 
     private fun createMenuBar(): JMenuBar {

@@ -6,8 +6,13 @@ import kotlin.math.round
 enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: Int, private val bMask: Int) {
     Unspecified(0, 0,0,0),
     GRB332(8, 0b00011100,0b11100000,0b00000011),
-    GRB333(11, 0b00001110000,0b11100000000,0b00000000111),
+    GRB333(12, 0b000001110000,0b011100000000,0b000000000111),
     GRB555(15, 0b0000001111100000,0b0111110000000000,0b0000000000011111);
+
+    var mask: Int = 0
+        private set
+    var maxColors: Int = 0
+        private set
 
     private val rIni: Int = rMask.countTrailingZeroBits()
     private val gIni: Int = gMask.countTrailingZeroBits()
@@ -15,6 +20,20 @@ enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: 
     private val rMax: Int = rMask shr rIni
     private val gMax: Int = gMask shr gIni
     private val bMax: Int = bMask shr bIni
+
+    init {
+        val bits = (rMask or gMask or bMask).countOneBits()
+        maxColors = 1
+        for (i in 1..bits) {
+            maxColors *= 2
+        }
+
+        mask = 1
+        for (i in 1..bpp) {
+            mask *= 2
+        }
+println("$bpp $bits $mask $maxColors")
+    }
 
     companion object {
         fun byId(id: Int): PaletteType {

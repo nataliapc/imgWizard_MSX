@@ -55,6 +55,24 @@ class InfoChunk : ChunkAbstractImpl(128)
 
             return obj
         }
+
+        fun fromMagic(header: String): InfoChunk {
+            val obj = InfoChunk()
+            obj.let {
+                it.originalHeight = 212
+                it.chipset = Chipset.V9938
+                when (header.substring(3)) {
+                    "5" -> { it.originalWidth = 256; it.pixelType = PixelType.BP4; it.paletteType = PaletteType.GRB333 }
+                    "6" -> { it.originalWidth = 512; it.pixelType = PixelType.BP2; it.paletteType = PaletteType.GRB333 }
+                    "7" -> { it.originalWidth = 512; it.pixelType = PixelType.BP4; it.paletteType = PaletteType.GRB333 }
+                    "8" -> { it.originalWidth = 256; it.pixelType = PixelType.BD8; it.paletteType = PaletteType.GRB332 }
+                    "A" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJKP; it.paletteType = PaletteType.Unspecified }
+                    "C" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJK; it.paletteType = PaletteType.Unspecified }
+                    else -> {}
+                }
+            }
+            return obj
+        }
     }
 
     fun update(image: ImgX): Chunk

@@ -54,6 +54,8 @@ class ImageWrapperImpl private constructor(): ImageWrapper
     override val height: Int
         get() = image.height
 
+    private val render = ImageRender()
+
     override fun getImageCopy(): BufferedImage = image.getSubimage(0,0, image.width, image.height)
 
     companion object
@@ -147,15 +149,15 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         when (chunk) {
             is DaadRedirectToImage, is PauseChunk -> {}
             is InfoChunk -> {
-                ImageRender.reset(chunk.pixelType, chunk.paletteType, chunk.chipset)
+                render.reset(chunk.pixelType, chunk.paletteType, chunk.chipset)
             }
             is DaadResetWindowGraphicPointer -> { dataPointer = 0 }
-            is DaadClearWindow -> { dataPointer = 0 ; ImageRender.clear(image, 0) }
+            is DaadClearWindow -> { dataPointer = 0 ; render.clear(image, 0) }
             is DaadSkipBytes -> { dataPointer += chunk.auxData }
-            is ScreenBitmapChunk -> { dataPointer = ImageRender.screenBitmapChunk(image, chunk, dataPointer) }
-            is ScreenPaletteChunk -> { TODO() }
-            is V9990CmdChunk -> { ImageRender.commandV9990(image, chunk) }
-            is V9990CmdDataChunk -> { ImageRender.commandDataV9990(image, chunk.getUncompressedData()) }
+            is ScreenBitmapChunk -> { dataPointer = render.screenBitmapChunk(image, chunk, dataPointer) }
+            is ScreenPaletteChunk -> { render.screenPalette(chunk) }
+            is V9990CmdChunk -> { render.commandV9990(image, chunk) }
+            is V9990CmdDataChunk -> { render.commandDataV9990(image, chunk.getUncompressedData()) }
             else -> {
                 throw RuntimeException("Unknown chunk type (id: ${chunk.getId()})")
             }
@@ -163,10 +165,12 @@ class ImageWrapperImpl private constructor(): ImageWrapper
     }
 }
 
-object ImageRender {
-    private var pixelType = PixelType.BD8
-    private var paletteType = PaletteType.GRB332
-    private var chipset = Chipset.V9938
+class ImageRender(
+    private var pixelType: PixelType = PixelType.BD8,
+    private var paletteType: PaletteType = PaletteType.GRB332,
+    private var chipset: Chipset = Chipset.Unspecified
+) {
+    private var currentPalette: ByteArray? = null
 
     private var dataRect = Rectangle(0,0,0,0)
     private var dataLogicalOp = LogicalOp.None
@@ -187,15 +191,24 @@ object ImageRender {
         var xPos: Int = startRawPixel % image.width
         var yPos: Int = startRawPixel / image.width
         val colorStream = MSXToRGB24InputStream(chunk.getUncompressedData(), pixelType, paletteType)
-        while (colorStream.available() > 0) {
-            image.setRGB(xPos, yPos, colorStream.readColor())
-            xPos++
-            if (xPos >= image.width) {
-                xPos = 0
-                yPos++
+        colorStream.use {
+            if (currentPalette != null) {
+                it.setPalette(currentPalette!!)
+            }
+            while (it.available() > 0) {
+                image.setRGB(xPos, yPos, it.readColor())
+                xPos++
+                if (xPos >= image.width) {
+                    xPos = 0
+                    yPos++
+                }
             }
         }
         return dataPointer + chunk.auxData
+    }
+
+    fun screenPalette(chunk: ScreenPaletteChunk) {
+        currentPalette = chunk.getRawData()
     }
 
     fun commandDataV9990(image: BufferedImage, data: ByteArray) {
