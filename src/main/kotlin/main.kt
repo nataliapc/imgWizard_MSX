@@ -6,6 +6,7 @@ import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.impl.ImgXImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.*
+import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PixelType
@@ -84,7 +85,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         throw ArgumentException(cmd)
     }
     val fileIn = getFile(args[fileIdx], "Opening")
-    val image = ScreenBitmapImpl.from(fileIn) as ScreenBitmapImpl
+    val image = ScreenBitmap.Factory.from(fileIn)
     val lines = checkNumericArg(args[linesIdx])
     val transparent: Byte? = if (args.size==linesIdx+1) null else args[transpIdx].toByteOrNull()
     var compressor: Compressor = Rle(transparent = transparent ?: 0)
@@ -270,8 +271,8 @@ fun cmd5A_TransformSC5toSC10(args: Array<String>) {
     if (lines !in 0..212) {
         throw ArgumentOutOfRangeException(lines, cmd)
     }
-    val sc5 = ScreenBitmapImpl.from(getFile(args[sc5Idx]))
-    val sca = ScreenBitmapImpl.SC10()
+    val sc5 = ScreenBitmap.Factory.from(getFile(args[sc5Idx]))
+    val sca = ScreenBitmap.Factory.getSC10()
     if (sc5 !is ScreenBitmapImpl.SC5) {
         throw ImgWizardException("Input file might not be an SC5 file", cmd)
     }

@@ -24,26 +24,29 @@ interface ScreenMSXCompanion {
     fun from(stream: InputStream, extension: FileExt): ScreenMSX
 }
 
-interface ScreenBitmap : ScreenMSX
+interface ScreenBitmap : ScreenMSX {
+    object Factory {
+        fun from(file: File): ScreenMSX = ScreenBitmapImpl.from(file)
+        fun from(file: File, extension: FileExt): ScreenMSX = ScreenBitmapImpl.from(file, extension)
+        fun from(stream: InputStream, extension: FileExt): ScreenMSX = ScreenBitmapImpl.from(stream, extension)
+        fun getSC5(): ScreenMSX = ScreenBitmapImpl.SC5()
+        fun getSC6(): ScreenMSX = ScreenBitmapImpl.SC6()
+        fun getSC7(): ScreenMSX = ScreenBitmapImpl.SC7()
+        fun getSC8(): ScreenMSX = ScreenBitmapImpl.SC8()
+        fun getSC10(): ScreenMSX = ScreenBitmapImpl.SC10()
+        fun getSC12(): ScreenMSX = ScreenBitmapImpl.SC12()
+        fun readSC5(file: File): ScreenMSX = ScreenBitmapImpl.SC5().from(file)
+        fun readSC6(file: File): ScreenMSX = ScreenBitmapImpl.SC6().from(file)
+        fun readSC7(file: File): ScreenMSX = ScreenBitmapImpl.SC7().from(file)
+        fun readSC8(file: File): ScreenMSX = ScreenBitmapImpl.SC8().from(file)
+        fun readSC10(file: File): ScreenMSX = ScreenBitmapImpl.SC10().from(file)
+        fun reafSC12(file: File): ScreenMSX = ScreenBitmapImpl.SC12().from(file)
+    }
+}
 
 interface ScreenTiled: ScreenMSX
 
-object ScreenFactory {
-    fun getSC5(): ScreenMSX = ScreenBitmapImpl.SC5()
-    fun getSC6(): ScreenMSX = ScreenBitmapImpl.SC6()
-    fun getSC7(): ScreenMSX = ScreenBitmapImpl.SC7()
-    fun getSC8(): ScreenMSX = ScreenBitmapImpl.SC8()
-    fun getSC10(): ScreenMSX = ScreenBitmapImpl.SC10()
-    fun getSC12(): ScreenMSX = ScreenBitmapImpl.SC12()
-    fun readSC5(file: File): ScreenMSX = ScreenBitmapImpl.SC5().from(file)
-    fun readSC6(file: File): ScreenMSX = ScreenBitmapImpl.SC6().from(file)
-    fun readSC7(file: File): ScreenMSX = ScreenBitmapImpl.SC7().from(file)
-    fun readSC8(file: File): ScreenMSX = ScreenBitmapImpl.SC8().from(file)
-    fun readSC10(file: File): ScreenMSX = ScreenBitmapImpl.SC10().from(file)
-    fun reafSC12(file: File): ScreenMSX = ScreenBitmapImpl.SC12().from(file)
-}
-
-open class ScreenBitmapImpl(
+sealed class ScreenBitmapImpl(
     val screenMode: ScreenModeType,
     final override val pixelType: PixelType,
     final override val paletteType: PaletteType,

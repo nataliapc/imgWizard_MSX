@@ -7,13 +7,17 @@ import java.lang.RuntimeException
 
 
 interface PaletteMSX {
+    object Factory {
+        fun from(paletteRaw: ByteArray, paletteType: PaletteType): PaletteMSX = PaletteMSXImpl(paletteRaw, paletteType)
+    }
+
     fun setRaw(newPalette: ByteArray)
     fun getRaw(): ByteArray
     fun getOriginalColor(index: Int): Int
     fun getColorRGB24(index: Int): Int
 }
 
-class PaletteMSXImpl(private var paletteType: PaletteType) : PaletteMSX {
+private class PaletteMSXImpl(private var paletteType: PaletteType) : PaletteMSX {
     private var paletteRaw: ByteArray = ByteArray(32)
     private lateinit var originalColorIntArray: IntArray
     private lateinit var colorRGB24IntArray: IntArray

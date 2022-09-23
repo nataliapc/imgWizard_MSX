@@ -1,7 +1,6 @@
 package org.nataliapc.imagewizard.utils
 
 import org.nataliapc.imagewizard.screens.PaletteMSX
-import org.nataliapc.imagewizard.screens.PaletteMSXImpl
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import java.io.ByteArrayInputStream
@@ -10,6 +9,13 @@ import java.lang.RuntimeException
 
 class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelType, private val paletteType: PaletteType) : DataByteArrayInputStream(stream)
 {
+    init {
+        if (pixelType.bpp !in intArrayOf(2,4,8,16)) {
+            throw RuntimeException("ColorType ${pixelType.bpp}bpp no supported")
+        }
+        resetRead()
+    }
+
     constructor(byteArray: ByteArray, pixelType: PixelType, paletteType: PaletteType) : this(ByteArrayInputStream(byteArray), pixelType, paletteType)
 
     private val byteBits = 8
@@ -18,15 +24,8 @@ class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelTyp
     private var currentByte: Int = 0
     private var currentPalette: PaletteMSX? = null
 
-    init {
-        if (pixelType.bpp !in intArrayOf(2,4,8,16)) {
-            throw RuntimeException("ColorType ${pixelType.bpp}bpp no supported")
-        }
-        resetRead()
-    }
-
-    fun setPalette(palette: ByteArray) {
-        currentPalette = PaletteMSXImpl(palette, paletteType)
+    fun setPalette(paletteRaw: ByteArray) {
+        currentPalette = PaletteMSX.Factory.from(paletteRaw, paletteType)
     }
 
     fun setPalette(palette: PaletteMSX) {
