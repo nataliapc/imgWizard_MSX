@@ -3,9 +3,6 @@ package org.nataliapc.imagewizard
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import java.awt.*
-import java.awt.event.KeyEvent
-import java.awt.event.KeyListener
-import java.awt.event.WindowEvent
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
@@ -19,10 +16,11 @@ import javax.swing.border.TitledBorder
 import java.awt.GridBagConstraints
 import java.awt.Insets
 import java.awt.Font
+import java.awt.event.*
 import java.util.*
-
 import javax.swing.UIManager
 import javax.swing.plaf.FontUIResource
+import java.util.concurrent.atomic.AtomicBoolean
 
 
 class ViewFrame(
@@ -30,7 +28,7 @@ class ViewFrame(
     private val file: File,
     private val infoChunk: InfoChunk?,
     private val origImage: BufferedImage
-) : JFrame(), KeyListener
+) : JFrame(), KeyListener, MouseWheelListener
 {
     private val maxZoom = 8
 
@@ -58,6 +56,7 @@ class ViewFrame(
 
         //JLabel picLabel
         picLabel = JLabel()
+        picLabel.addMouseWheelListener(this)
 
         //JPanel picPanel
         val picPanel = JPanel()
@@ -321,5 +320,22 @@ class ViewFrame(
     override fun keyPressed(event: KeyEvent?) {}
 
     override fun keyReleased(event: KeyEvent?) {}
+
+    var lockWheel = AtomicBoolean(false)
+
+    override fun mouseWheelMoved(event: MouseWheelEvent?) {
+        if (lockWheel.get()) return
+
+        lockWheel.set(true)
+        if (event != null) {
+            val notches: Int = event.wheelRotation
+            if (notches < 0) {
+                doZoomOut()
+            } else {
+                doZoomIn()
+            }
+        }
+        lockWheel.set(false)
+    }
 
 }
