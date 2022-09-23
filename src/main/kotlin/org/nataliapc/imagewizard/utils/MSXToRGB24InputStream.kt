@@ -1,5 +1,7 @@
 package org.nataliapc.imagewizard.utils
 
+import org.nataliapc.imagewizard.screens.PaletteMSX
+import org.nataliapc.imagewizard.screens.PaletteMSXImpl
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import java.io.ByteArrayInputStream
@@ -14,7 +16,7 @@ class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelTyp
 
     private var lastBitRead = 0
     private var currentByte: Int = 0
-    private var currentPalette: IntArray? = null
+    private var currentPalette: PaletteMSX? = null
 
     init {
         if (pixelType.bpp !in intArrayOf(2,4,8,16)) {
@@ -24,18 +26,11 @@ class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelTyp
     }
 
     fun setPalette(palette: ByteArray) {
-        if (32 != palette.size) {
-            throw RuntimeException("Expected palette size is 32 but is ${palette.size}")
-        }
+        currentPalette = PaletteMSXImpl(palette, paletteType)
+    }
 
-        val colorList = mutableListOf<Int>()
-        DataByteArrayInputStream(palette).use {
-            for (index in 0..15) {
-                val originalColor = it.readUnsignedShortLE()
-                colorList.add(paletteType.toRGB24(originalColor))
-            }
-        }
-        currentPalette = colorList.toIntArray()
+    fun setPalette(palette: PaletteMSX) {
+        currentPalette = palette
     }
 
     fun readColor(): Int {
@@ -43,11 +38,7 @@ class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelTyp
             pixelType.isShortSized() -> paletteType.toRGB24(readUnsignedShortLE())
             pixelType.isByteSized() -> {
                 if (pixelType.indexed || isIndexedBD8())
-                    if (currentPalette != null) {
-                        currentPalette!![unpackIndexed()]
-                    } else {
-                        unpackIndexed()
-                    }
+                    currentPalette?.getColorRGB24(unpackIndexed()) ?: unpackIndexed()
                 else
                     paletteType.toRGB24(readUnsignedByte())
             }

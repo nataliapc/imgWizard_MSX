@@ -4,6 +4,7 @@ import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.image.chunks.ChunkPalette
+import org.nataliapc.imagewizard.screens.PaletteMSX
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
@@ -36,6 +37,8 @@ class ScreenPaletteChunk(val palette: ByteArray) : ChunkAbstractImpl(1), ChunkPa
             return obj
         }
     }
+
+    constructor(paletteMsx: PaletteMSX): this(paletteMsx.getRaw())
 
     override fun getRawData(): ByteArray = palette
 
