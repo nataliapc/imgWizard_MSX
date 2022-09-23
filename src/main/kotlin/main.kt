@@ -11,6 +11,7 @@ import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
+import org.nataliapc.imagewizard.screens.enums.PixelAspect
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import java.io.File
 import java.io.FileInputStream
@@ -324,15 +325,18 @@ fun cmdV_ViewImageIMx(args: Array<String>) {
 
     val fileIn = getFile(args[fileIdx], "Opening")
     var infoChunk: InfoChunk? = null
+    var pixelAspectRatio = PixelAspect.Ratio11
+
     val origImg: BufferedImage = if (canReadImageExtension(fileIn.extension)) {
         ImageIO.read(FileInputStream(fileIn))
     } else {
         val imgx = ImgX.Factory.from(fileIn)
         infoChunk = imgx.getInfoChunk()
+        pixelAspectRatio = PixelAspect.getFromInfoChunk(infoChunk!!)
         imgx.render()
     }
 
-    ViewFrame("$appname $version", fileIn, infoChunk, origImg)
+    ViewFrame("$appname $version", fileIn, infoChunk, origImg, pixelAspectRatio)
 }
 
 private fun getFile(filename: String, verb: String = "Reading"): File

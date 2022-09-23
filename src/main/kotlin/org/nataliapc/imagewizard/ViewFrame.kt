@@ -1,33 +1,30 @@
 package org.nataliapc.imagewizard
 
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
+import org.nataliapc.imagewizard.screens.enums.PixelAspect
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import java.awt.*
-import java.awt.image.BufferedImage
-import java.io.File
-import javax.imageio.ImageIO
-import javax.swing.*
-import kotlin.system.exitProcess
-import javax.swing.KeyStroke
-import javax.swing.BoxLayout
-import javax.swing.JPanel
-import javax.swing.border.EmptyBorder
-import javax.swing.border.TitledBorder
-import java.awt.GridBagConstraints
-import java.awt.Insets
 import java.awt.Font
 import java.awt.event.*
+import java.awt.image.BufferedImage
+import java.io.File
 import java.util.*
-import javax.swing.UIManager
-import javax.swing.plaf.FontUIResource
 import java.util.concurrent.atomic.AtomicBoolean
+import javax.imageio.ImageIO
+import javax.swing.*
+import javax.swing.BoxLayout
+import javax.swing.border.EmptyBorder
+import javax.swing.border.TitledBorder
+import javax.swing.plaf.FontUIResource
+import kotlin.system.exitProcess
 
 
 class ViewFrame(
     private val appName: String,
     private val file: File,
     private val infoChunk: InfoChunk?,
-    private val origImage: BufferedImage
+    private val origImage: BufferedImage,
+    private val pixelAspectRatio: PixelAspect
 ) : JFrame(), KeyListener, MouseWheelListener
 {
     private val maxZoom = 8
@@ -272,9 +269,9 @@ class ViewFrame(
     }
 
     private fun scaleImage(image: Image): Image {
-        if (zoomFactor == 1) return image
-        val zoomWidth = origImage.width * zoomFactor
-        val zoomHeight = origImage.height * zoomFactor
+        if (zoomFactor == 1 && pixelAspectRatio.verticalFactor == 1) return image
+        val zoomWidth = origImage.width * (zoomFactor * pixelAspectRatio.horizontalFactor)
+        val zoomHeight = origImage.height * (zoomFactor * pixelAspectRatio.verticalFactor)
         return image.getScaledInstance(zoomWidth, zoomHeight, Image.SCALE_FAST)
     }
 
