@@ -1,15 +1,17 @@
-package org.nataliapc.imagewizard
+package org.nataliapc.imagewizard.swing
 
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.screens.enums.PixelAspect
 import org.nataliapc.imagewizard.screens.enums.PixelType
+import org.nataliapc.imagewizard.swing.interfaces.Zoomable
+import org.nataliapc.imagewizard.swing.listeners.MouseDragAndMoveScrollListener
+import org.nataliapc.imagewizard.swing.listeners.MouseWheelZoomListener
 import java.awt.*
 import java.awt.Font
 import java.awt.event.*
 import java.awt.image.BufferedImage
 import java.io.File
 import java.util.*
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.imageio.ImageIO
 import javax.swing.*
 import javax.swing.BoxLayout
@@ -25,7 +27,7 @@ class ViewFrame(
     private val infoChunk: InfoChunk?,
     private val origImage: BufferedImage,
     private val pixelAspectRatio: PixelAspect
-) : JFrame(), KeyListener, MouseWheelListener
+) : JFrame(), KeyListener, Zoomable
 {
     private val maxZoom = 8
 
@@ -53,7 +55,6 @@ class ViewFrame(
 
         //JLabel picLabel
         picLabel = JLabel()
-        picLabel.addMouseWheelListener(this)
 
         //JPanel picPanel
         val picPanel = JPanel()
@@ -83,9 +84,16 @@ class ViewFrame(
             Thread.sleep(250)
             minimumSize = size
         }
+
+        //MouseListeners
+        val mouseListener = MouseDragAndMoveScrollListener(picLabel)
+        picLabel.addMouseListener(mouseListener)
+        picLabel.addMouseMotionListener(mouseListener)
+        //MouseWheelListener
+        picLabel.addMouseWheelListener(MouseWheelZoomListener(this))
     }
 
-    fun setUIFont(f: FontUIResource?) {
+    private fun setUIFont(f: FontUIResource?) {
         val keys: Enumeration<*> = UIManager.getDefaults().keys()
         while (keys.hasMoreElements()) {
             val key = keys.nextElement()
@@ -101,7 +109,7 @@ class ViewFrame(
 
     private fun updateTitle() {
         val titledBorder = TitledBorder("${file.name} (zoom x$zoomFactor)")
-        titledBorder.titleJustification = TitledBorder.RIGHT
+        titledBorder.titleJustification = TitledBorder.CENTER
         scroller.border = titledBorder
     }
 
@@ -247,7 +255,14 @@ class ViewFrame(
         }
     }
 
-    private fun doZoomIn() {
+    override fun resetZoom() {
+        zoomFactor = 1
+        scaledImage = scaleImage(origImage)
+        updateImage(scaledImage, true)
+        updateTitle()
+    }
+
+    override fun doZoomIn() {
         if (zoomFactor == maxZoom) return
         zoomFactor = (zoomFactor + 1).coerceAtMost(maxZoom)
         scaledImage = scaleImage(origImage)
@@ -255,7 +270,7 @@ class ViewFrame(
         updateTitle()
     }
 
-    private fun doZoomOut() {
+    override fun doZoomOut() {
         if (zoomFactor == 1) return
         zoomFactor = (zoomFactor - 1).coerceAtLeast(1)
         scaledImage = scaleImage(origImage)
@@ -305,34 +320,16 @@ class ViewFrame(
         return bufferedimage
     }
 
-    override fun keyTyped(event: KeyEvent?) {
-        if (event != null) {
-            when (event.keyChar.code) {
-                43 -> doZoomIn()
-                KeyEvent.VK_MINUS -> doZoomOut()
-            }
+    // KeyListener
+    override fun keyTyped(event: KeyEvent) {
+        when (event.keyChar.code) {
+            43 -> doZoomIn()
+            KeyEvent.VK_MINUS -> doZoomOut()
         }
     }
 
-    override fun keyPressed(event: KeyEvent?) {}
+    override fun keyPressed(event: KeyEvent) {}
 
-    override fun keyReleased(event: KeyEvent?) {}
-
-    var lockWheel = AtomicBoolean(false)
-
-    override fun mouseWheelMoved(event: MouseWheelEvent?) {
-        if (lockWheel.get()) return
-
-        lockWheel.set(true)
-        if (event != null) {
-            val notches: Int = event.wheelRotation
-            if (notches < 0) {
-                doZoomOut()
-            } else {
-                doZoomIn()
-            }
-        }
-        lockWheel.set(false)
-    }
-
+    override fun keyReleased(event: KeyEvent) {}
 }
+

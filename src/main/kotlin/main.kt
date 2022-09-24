@@ -1,4 +1,4 @@
-import org.nataliapc.imagewizard.ViewFrame
+import org.nataliapc.imagewizard.swing.ViewFrame
 import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.compressor.Raw
