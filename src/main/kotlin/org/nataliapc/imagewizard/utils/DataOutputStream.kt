@@ -1,6 +1,8 @@
+@file:JvmName("DataOutputStreamKt")
 package org.nataliapc.imagewizard.utils
 
 import java.io.DataOutputStream
+
 
 fun DataOutputStream.writeByte(v: Short)
 {

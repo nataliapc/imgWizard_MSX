@@ -5,7 +5,9 @@ import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 import java.lang.RuntimeException
 
@@ -20,7 +22,7 @@ import java.lang.RuntimeException
         ---data---
         0x0005 ...   Compressed data (1-2043 bytes length)
  */
-class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkAbstractImpl(ID_BASE + compressor.id),
+class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkAbstractImpl(33),
     ChunkData
 {
     private var compressedData = byteArrayOf()
@@ -36,21 +38,17 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
         }
     }
 
-    constructor(id: Int, compressedData: ByteArray, uncompressedSize: Int) : this(Compressor.Types.byId(id - ID_BASE)) {
-        this.compressedData = compressedData
-        auxData = uncompressedSize
-    }
-
     companion object : ChunkCompanion {
-        const val ID_BASE = 33
-
         override fun from(stream: DataInputStream): V9990CmdDataChunk {
             val id = stream.readUnsignedByte()
             val len = stream.readUnsignedShortLE()
             val auxData = stream.readUnsignedShortLE()
-            val compressedData = stream.readNBytes(len)
+            val compressor = Compressor.Types.byId(stream.read())
+            val compressedData = stream.readNBytes(len - 1)
 
-            val obj = V9990CmdDataChunk(id, compressedData, auxData)
+            val obj = V9990CmdDataChunk(compressor)
+            obj.auxData = auxData
+            obj.compressedData = compressedData
             obj.checkId(id)
 
             return obj
@@ -68,7 +66,18 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
 
     override fun build(): ByteArray
     {
-        return ensemble(compressedData)
+        val out = DataByteArrayOutputStream()
+
+        val header = buildHeader()
+
+        out.write(header)
+        out.writeShortLE(compressedData.size + 1)
+        out.writeShortLE(auxData)
+
+        out.writeByte(compressor.id)
+        out.write(compressedData)
+
+        return out.toByteArray()
     }
 
     override fun printInfo() {

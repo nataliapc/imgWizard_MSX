@@ -164,6 +164,7 @@ class ViewFrame(
         subPanel.add(JLabel(info.chipset.name), createGbc(1,row++))
 
         subPanel.add(JLabel(""), createGbc(0,row, true))
+
         return panel
     }
 

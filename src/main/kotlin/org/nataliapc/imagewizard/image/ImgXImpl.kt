@@ -61,6 +61,16 @@ internal class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
         return infoChunk
     }
 
+    override fun setInfoChunk(infoChunk: InfoChunk) {
+        if (this.infoChunk == null) {
+            chunks.add(0, infoChunk)
+        } else {
+            chunks[0] = infoChunk
+        }
+        this.infoChunk = infoChunk
+        infoChunk.update(this)
+    }
+
     override fun get(index: Int): Chunk {
         return chunks[index]
     }

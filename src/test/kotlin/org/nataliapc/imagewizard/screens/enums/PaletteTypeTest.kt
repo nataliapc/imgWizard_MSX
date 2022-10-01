@@ -40,7 +40,7 @@ internal class PaletteTypeTest {
     @Test
     fun getBpp_Ok() {
         assertEquals(8, PaletteType.GRB332.bpp)
-        assertEquals(11, PaletteType.GRB333.bpp)
+        assertEquals(12, PaletteType.GRB333.bpp)
         assertEquals(15, PaletteType.GRB555.bpp)
     }
 }

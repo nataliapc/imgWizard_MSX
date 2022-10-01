@@ -1,5 +1,6 @@
 package org.nataliapc.imagewizard.swing.listeners
 
+import java.awt.Cursor
 import java.awt.Point
 import java.awt.event.MouseEvent
 import java.awt.event.MouseListener
@@ -30,6 +31,7 @@ class MouseDragAndMoveScrollListener(private val scrolledLabel: JLabel): MouseLi
         if (event.button == MouseEvent.BUTTON1) {
             synchronized(this) {
                 if (!event.isConsumed && !isPressed.getAndSet(true)) {
+                    scrolledLabel.cursor = Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR)
                     viewPort = SwingUtilities.getAncestorOfClass(JViewport::class.java, scrolledLabel) as JViewport
                     oldPos.setLocation(event.x, event.y)
                     event.consume()
@@ -42,6 +44,7 @@ class MouseDragAndMoveScrollListener(private val scrolledLabel: JLabel): MouseLi
         if (event.button == MouseEvent.BUTTON1) {
             synchronized(this) {
                 if (!event.isConsumed && isPressed.getAndSet(false)) {
+                    scrolledLabel.cursor = Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)
                     event.consume()
                 }
             }

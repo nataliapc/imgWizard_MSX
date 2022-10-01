@@ -251,7 +251,7 @@ class ImageRender(
         if (mask != 0xffff) { TODO("mask not implemented ($mask)") }
 
         val g = image.createGraphics() as Graphics2D
-        g.copyArea(sx, sy, dx, dy, nx, ny)
+        g.copyArea(sx, sy, nx, ny, dx-sx, dy-sy)
     }
 
     private fun startSendData(dx: Int, dy: Int, nx: Int, ny: Int, log: LogicalOp)

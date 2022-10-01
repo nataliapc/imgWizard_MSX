@@ -3,7 +3,8 @@ import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
-import org.nataliapc.imagewizard.image.ImgX
+import org.nataliapc.imagewizard.image.ImgXFactory
+import org.nataliapc.imagewizard.image.ImgXRepository
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.screens.ScreenBitmap
@@ -15,7 +16,6 @@ import org.nataliapc.imagewizard.screens.enums.PixelAspect
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import java.io.File
 import java.io.FileInputStream
-import java.io.FileOutputStream
 import java.lang.RuntimeException
 import javax.imageio.ImageIO
 import kotlin.math.absoluteValue
@@ -68,7 +68,7 @@ class ArgumentOutOfRangeException(value: Int, cmd: String): ImgWizardException("
 private fun cmdL_ListContent(args: Array<String>)
 {
     val fileIn = getFile(args[1])
-    ImgX.Factory.from(fileIn)
+    ImgXRepository().from(fileIn)
         .printInfo()
 }
 
@@ -100,7 +100,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         TODO("CL option not yet implemented")
     }
 
-    val imgx = ImgX.Factory.getInstance()
+    val imgx = ImgXFactory().getInstance()
     val infoChunk = imgx.get(0) as InfoChunk
     infoChunk.originalWidth = image.width
     infoChunk.originalHeight = image.height
@@ -123,10 +123,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
     val fileOut = File(fileIn.nameWithoutExtension + ".imx")
     println("### Creating file ${fileOut.name}")
 
-    val out = FileOutputStream(fileOut)
-    out.use {
-        out.write(imgx.build())
-    }
+    ImgXRepository().save(imgx, fileOut)
     imgx.printInfo()
 }
 
@@ -152,7 +149,7 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     val dx = if (args.size <= 8) sx else checkNumericArg(args[8])
     val dy = if (args.size <= 8) sy else checkNumericArg(args[9])
 
-    val imgx = ImgX.Factory.getInstance().add(V9990CmdChunk.RectangleToSend(dx, dy, nx, ny))
+    val imgx = ImgXFactory().getInstance().add(V9990CmdChunk.SendRectangle(dx, dy, nx, ny))
     val infoChunk = imgx.get(0) as InfoChunk
     infoChunk.originalWidth = image.width
     infoChunk.originalHeight = image.height
@@ -172,10 +169,7 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     val fileOut = File(fileIn.nameWithoutExtension + ".imx")
     println("### Creating file ${fileOut.name}")
 
-    val out = FileOutputStream(fileOut)
-    out.use {
-        out.write(imgx.build())
-    }
+    ImgXRepository().save(imgx, fileOut)
     imgx.printInfo()
 }
 
@@ -196,11 +190,8 @@ fun cmdR_LocationRedirection(args: Array<String>)
     val fileOut = File(args[1])
     println("### Creating file ${fileOut.name}")
 
-    val out = FileOutputStream(fileOut)
-    val imgx = ImgX.Factory.getInstance(false).add(DaadRedirectToImage(location.toShort()))
-    out.use {
-        out.write(imgx.build())
-    }
+    val imgx = ImgXFactory().getInstance(false).add(DaadRedirectToImage(location.toShort()))
+    ImgXRepository().save(imgx, fileOut)
     imgx.printInfo()
 }
 
@@ -215,16 +206,13 @@ fun cmdD_RemoveChunkFromIMx(args: Array<String>)
     }
     val chunkToRemove = checkNumericArg(args[2])
     val fileIn = getFile(args[1])
-    val imgx = ImgX.Factory.from(fileIn)
+    val imgx = ImgXRepository().from(fileIn)
 
     println("    Removing chunk #$chunkToRemove")
     imgx.remove(chunkToRemove)
 
     println("### Saving file ${fileIn.name}")
-    val out = FileOutputStream(fileIn)
-    out.use {
-        out.write(imgx.build())
-    }
+    ImgXRepository().save(imgx, fileIn)
 }
 
 // j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3.IM?] ...
@@ -239,9 +227,9 @@ fun cmdJ_JoinImageFiles(args: Array<String>)
     val fileOut = File(args[1])
 
     var index = 2
-    val imgx = ImgX.Factory.from(getFile(args[index++]))
+    val imgx = ImgXRepository().from(getFile(args[index++]))
     while (index < args.size) {
-        val toJoin = ImgX.Factory.from(getFile(args[index++]))
+        val toJoin = ImgXRepository().from(getFile(args[index++]))
         for (i in 0 until toJoin.chunkCount()) {
             val chunk = toJoin.get(i)
             if (chunk !is InfoChunk) {
@@ -251,10 +239,7 @@ fun cmdJ_JoinImageFiles(args: Array<String>)
     }
 
     println("### Saving file ${fileOut.name}")
-    val out = FileOutputStream(fileOut)
-    out.use {
-        out.write(imgx.build())
-    }
+    ImgXRepository().save(imgx, fileOut)
 }
 
 // 5a <fileIn.SC5> <fileOut.SCA> [lines]
@@ -330,7 +315,7 @@ fun cmdV_ViewImageIMx(args: Array<String>) {
     val origImg: BufferedImage = if (canReadImageExtension(fileIn.extension)) {
         ImageIO.read(FileInputStream(fileIn))
     } else {
-        val imgx = ImgX.Factory.from(fileIn)
+        val imgx = ImgXRepository().from(fileIn)
         infoChunk = imgx.getInfoChunk()
         pixelAspectRatio = PixelAspect.getFromInfoChunk(infoChunk!!)
         imgx.render()
@@ -365,6 +350,7 @@ private fun checkNumericArg(value: String): Int
 private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<ByteArray>
 {
     val maxSize = MAX_SIZE_UNCOMPRESSED
+    val maxChunkDataSize = MAX_CHUNK_DATA_SIZE - 1
     val out = arrayListOf<ByteArray>()
     var start = 0
     var end: Int
@@ -374,16 +360,17 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
     var dataCompressedSize: Int
 
     while (start < dataIn.size) {
-        end = start + MAX_CHUNK_DATA_SIZE * 2
+        end = start + maxChunkDataSize * 2
         if (end > dataIn.size) {
             end = dataIn.size
         } else {
             // Search a near and easy entry point
             do {
+                if (end-start >= maxSize) { end = start + maxSize ; break }
                 dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
                 dataCompressedSize = dataCompressed.size
                 if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
-                if (dataCompressedSize > MAX_CHUNK_DATA_SIZE) break;
+                if (dataCompressedSize > maxChunkDataSize) break;
                 end = start + (end - start) * 3 / 2
                 if (end > dataIn.size) {
                     end = dataIn.size
@@ -400,14 +387,14 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
             dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
             dataCompressedSize = dataCompressed.size
             if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
-            if (end-start == maxSize && dataCompressedSize <= MAX_CHUNK_DATA_SIZE) break
-            if ((lastEnd-end).absoluteValue <= 1 && dataCompressedSize > MAX_CHUNK_DATA_SIZE) {
+            if (end-start == maxSize && dataCompressedSize <= maxChunkDataSize) break
+            if ((lastEnd-end).absoluteValue <= 1 && dataCompressedSize > maxChunkDataSize) {
                 end -= 1 ; lastEnd = end ; continue
             }
-            if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= MAX_CHUNK_DATA_SIZE-1) break
-            if (dataCompressedSize >= MAX_CHUNK_DATA_SIZE-2 && dataCompressedSize <= MAX_CHUNK_DATA_SIZE) break
+            if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= maxChunkDataSize-1) break
+            if (dataCompressedSize >= maxChunkDataSize-2 && dataCompressedSize <= maxChunkDataSize) break
             aux = end
-            if (dataCompressedSize > MAX_CHUNK_DATA_SIZE) {
+            if (dataCompressedSize > maxChunkDataSize) {
                 end -= (end-lastEnd).absoluteValue / 2
             } else {
                 end += (end-lastEnd).absoluteValue / 2
@@ -419,7 +406,7 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<B
             lastEnd = aux
         } while (true)
         if (end-start <= dataCompressedSize) {
-            end = min(dataIn.size, start + MAX_CHUNK_DATA_SIZE)
+            end = min(dataIn.size, start + maxChunkDataSize)
             dataCompressedSize = end - start
         }
         if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize, true)

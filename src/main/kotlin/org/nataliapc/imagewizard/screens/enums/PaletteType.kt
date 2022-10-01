@@ -32,7 +32,6 @@ enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: 
         for (i in 1..bpp) {
             mask *= 2
         }
-println("$bpp $bits $mask $maxColors")
     }
 
     companion object {

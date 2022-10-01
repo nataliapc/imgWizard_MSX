@@ -56,7 +56,7 @@ internal class V9990CmdChunkTest {
 
     @Test
     fun instanceRectangleToSend_Ok() {
-        val result = RectangleToSend(0, 0, 100, 200)
+        val result = SendRectangle(0, 0, 100, 200)
 
         assertEquals(32, result.getId())
     }

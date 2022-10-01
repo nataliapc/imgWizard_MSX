@@ -1,3 +1,4 @@
+@file:JvmName("DataInputStreamKt")
 package org.nataliapc.imagewizard.utils
 
 import java.io.DataInputStream
