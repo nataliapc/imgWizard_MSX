@@ -16,11 +16,12 @@ import java.lang.RuntimeException
     Chunk V9990 Send data to Command Port (P#2):
         Offset Size  Description
         --header--
-        0x0000  1    Chunk type  (Raw:33 RLE:34 Pletter:35)
-        0x0001  2    Compressed data length (max: 2043 bytes)
+        0x0000  1    Chunk type  (33)
+        0x0001  2    Chunk size (max: 2043 bytes): Compressor Id + Compressed data length
         0x0003  2    Uncompressed data length in bytes
         ---data---
-        0x0005 ...   Compressed data (1-2043 bytes length)
+        0x0005  1    Compressor Id
+        0x0006 ...   Compressed data (1-2043 bytes length)
  */
 class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkAbstractImpl(33),
     ChunkData
