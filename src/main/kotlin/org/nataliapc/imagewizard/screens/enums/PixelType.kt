@@ -21,6 +21,7 @@ enum class PixelType(val mask: Int, val colors: Int, val indexed: Boolean) {
         }
     }
 
+    fun id(): Int = values().indexOf(this)
     fun isByteSized() = bpp <= 8
     fun isShortSized() = bpp <=16 && !isByteSized()
 

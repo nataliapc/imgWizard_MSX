@@ -7,6 +7,8 @@ enum class Chipset(val ramKb: Int) {
     V9958(128),
     V9990(512);
 
+    fun id(): Int = values().indexOf(this)
+
     companion object {
         fun byId(id: Int): Chipset {
             return values()[id]

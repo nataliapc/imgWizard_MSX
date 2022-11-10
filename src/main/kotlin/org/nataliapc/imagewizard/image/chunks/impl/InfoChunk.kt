@@ -18,11 +18,16 @@ import java.io.DataInputStream
         Offset Size  Description
         --header--
         0x0000  1    Chunk type: (128)
-        0x0001  2    Chunk data length (avoiding header)
-        0x0003  2    Empty chunk header (filled with 0x00)
-        --data--
-        0x0005  1    InfoChunk version
-        0x0006  2    Chunk count (without info chunk)
+        0x0001  2    Extra header length (10)
+        0x0003  2    Data length (0)
+        --extra header--
+        0x0005  1    Info version
+        0x0006  2    Chunk count
+        0x0008  2    Original width
+        0x000a  2    Original height
+        0x000c  1    Pixel type
+        0x000d  1    Palette type
+        0x000e  1    Chipset type
  */
 class InfoChunk : ChunkAbstractImpl(128)
 {
@@ -38,37 +43,27 @@ class InfoChunk : ChunkAbstractImpl(128)
 
     companion object : ChunkCompanion {
         override fun from(stream: DataInputStream): Chunk {
-            val id = stream.readUnsignedByte()
-            stream.readUnsignedShortLE()
-
             val obj = InfoChunk()
-            obj.checkId(id)
-
-            obj.auxData = stream.readUnsignedShortLE()
-            obj.infoVersion = stream.readUnsignedByte()
-            obj.chunkCount = stream.readUnsignedShortLE()
-            obj.originalWidth = stream.readUnsignedShortLE()
-            obj.originalHeight = stream.readUnsignedShortLE()
-            obj.pixelType = PixelType.byId(stream.readUnsignedByte())
-            obj.paletteType = PaletteType.byId(stream.readUnsignedByte())
-            obj.chipset = Chipset.byId(stream.readUnsignedByte())
-
+            obj.readChunk(stream)
             return obj
         }
 
-        fun fromMagic(header: String): InfoChunk {
+        fun fromMagic(magicHeader: String): InfoChunk {
             val obj = InfoChunk()
             obj.let {
                 it.originalHeight = 212
                 it.chipset = Chipset.V9938
-                when (header.substring(3)) {
+                when (magicHeader.substring(3)) {
                     "5" -> { it.originalWidth = 256; it.pixelType = PixelType.BP4; it.paletteType = PaletteType.GRB333 }
                     "6" -> { it.originalWidth = 512; it.pixelType = PixelType.BP2; it.paletteType = PaletteType.GRB333 }
                     "7" -> { it.originalWidth = 512; it.pixelType = PixelType.BP4; it.paletteType = PaletteType.GRB333 }
                     "8" -> { it.originalWidth = 256; it.pixelType = PixelType.BD8; it.paletteType = PaletteType.GRB332 }
-                    "A" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJKP; it.paletteType = PaletteType.Unspecified }
+                    "A" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJKP; it.paletteType = PaletteType.GRB333 }
                     "C" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJK; it.paletteType = PaletteType.Unspecified }
-                    else -> {}
+                    else -> {
+                        it.originalHeight = 0
+                        it.chipset = Chipset.Unspecified
+                    }
                 }
             }
             return obj
@@ -81,19 +76,28 @@ class InfoChunk : ChunkAbstractImpl(128)
         return this
     }
 
-    override fun build(): ByteArray
-    {
+    override fun readExtraHeader(stream: DataInputStream) {
+        infoVersion = stream.readUnsignedByte()
+        chunkCount = stream.readUnsignedShortLE()
+        originalWidth = stream.readUnsignedShortLE()
+        originalHeight = stream.readUnsignedShortLE()
+        pixelType = PixelType.byId(stream.readUnsignedByte())
+        paletteType = PaletteType.byId(stream.readUnsignedByte())
+        chipset = Chipset.byId(stream.readUnsignedByte())
+    }
+
+    override fun ensembleExtraHeader(): ByteArray {
         val out = DataByteArrayOutputStream()
-
-        out.writeByte(infoVersion)
-        out.writeShortLE(chunkCount)
-        out.writeShortLE(originalWidth)
-        out.writeShortLE(originalHeight)
-        out.writeByte(pixelType.ordinal)
-        out.writeByte(paletteType.ordinal)
-        out.writeByte(chipset.ordinal)
-
-        return ensemble(out.toByteArray())
+        out.use {
+            out.writeByte(infoVersion)
+            out.writeShortLE(chunkCount)
+            out.writeShortLE(originalWidth)
+            out.writeShortLE(originalHeight)
+            out.writeByte(pixelType.ordinal)
+            out.writeByte(paletteType.ordinal)
+            out.writeByte(chipset.ordinal)
+        }
+        return out.toByteArray()
     }
 
     override fun getInfo(): Array<String> {

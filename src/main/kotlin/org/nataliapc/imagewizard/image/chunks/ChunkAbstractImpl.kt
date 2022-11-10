@@ -1,6 +1,5 @@
 package org.nataliapc.imagewizard.image.chunks
 
-import org.nataliapc.imagewizard.image.chunks.impl.DaadClearWindow
 import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
@@ -8,33 +7,29 @@ import java.io.DataInputStream
 import java.lang.RuntimeException
 
 
+/*
+    Chunk format:
+        Offset Size  Description
+        --header--
+        0x0000  1    Chunk type: (17:ClearWindow)
+        0x0001  2    Extra header length
+        0x0003  2    Data length (0x0000)
+        --extra header--
+        ...
+        --data--
+        ...
+ */
 abstract class ChunkAbstractImpl(private val id: Int): Chunk
 {
-    open var auxData: Int = 0
+    private var extraHeaderLength: Int = 0
+    protected var dataLength: Int = 0
 
-    companion object : ChunkCompanion {
+    companion object {
         const val MAX_CHUNK_DATA_SIZE = 2043
-
-        override fun from(stream: DataInputStream): Chunk {
-            stream.readUnsignedByte()
-            val length = stream.readUnsignedShortLE()
-            stream.readNBytes(2 + length)
-            return DaadClearWindow()
-        }
     }
 
-    override fun getId(): Int {
+    final override fun getId(): Int {
         return id
-    }
-
-    override fun setAuxData(value: Int): Chunk
-    {
-        auxData = value
-        return this
-    }
-
-    override fun getInfo(): Array<String> {
-        return arrayOf("**** UNKNOWN CHUNK TYPE ****")
     }
 
     override fun printInfo() {
@@ -43,9 +38,40 @@ abstract class ChunkAbstractImpl(private val id: Int): Chunk
         }
     }
 
-    override fun printInfoWithOrdinal(ordinal: Int) {
+    final override fun printInfoWithOrdinal(ordinal: Int) {
         print("CHUNK #$ordinal [id:${getId()}] ")
         printInfo()
+    }
+
+    override fun build(): ByteArray {
+        return ensemble(ensembleExtraHeader(), ensembleData())
+    }
+
+    protected open fun ensembleExtraHeader(): ByteArray = byteArrayOf()
+    protected open fun ensembleData(): ByteArray = byteArrayOf()
+
+    override fun getInfo(): Array<String> {
+        return arrayOf("**** UNKNOWN CHUNK TYPE ****")
+    }
+
+    protected fun readChunk(stream: DataInputStream) {
+        readHeader(stream)
+        readExtraHeader(stream)
+        readData(stream)
+    }
+
+    private fun readHeader(stream: DataInputStream) {
+        checkId(stream.readUnsignedByte())
+        extraHeaderLength = stream.readUnsignedShortLE()
+        dataLength = stream.readUnsignedShortLE()
+    }
+
+    protected open fun readExtraHeader(stream: DataInputStream) {
+        stream.readNBytes(extraHeaderLength)
+    }
+
+    protected open fun readData(stream: DataInputStream) {
+        stream.readNBytes(dataLength)
     }
 
     protected fun checkId(id: Int) {
@@ -54,19 +80,24 @@ abstract class ChunkAbstractImpl(private val id: Int): Chunk
         }
     }
 
-    protected fun buildHeader(): ByteArray
+    private fun buildHeader(): ByteArray
     {
-        return byteArrayOf(getId().toByte())
+        val out = DataByteArrayOutputStream()
+        out.writeByte(getId())
+        out.writeShortLE(extraHeaderLength)
+        out.writeShortLE(dataLength)
+        return out.toByteArray()
     }
 
-    protected fun ensemble(data: ByteArray): ByteArray
+    protected fun ensemble(extraHeader: ByteArray, data: ByteArray): ByteArray
     {
-        val header = buildHeader()
         val out = DataByteArrayOutputStream()
 
-        out.write(header)
-        out.writeShortLE(data.size)
-        out.writeShortLE(auxData)
+        extraHeaderLength = extraHeader.size
+        dataLength = data.size
+
+        out.write(buildHeader())
+        out.write(extraHeader)
         out.write(data)
 
         return out.toByteArray()

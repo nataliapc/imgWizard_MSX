@@ -153,7 +153,7 @@ class ImageWrapperImpl private constructor(): ImageWrapper
             }
             is DaadResetWindowGraphicPointer -> { dataPointer = 0 }
             is DaadClearWindow -> { dataPointer = 0 ; render.clear(image, 0) }
-            is DaadSkipBytes -> { dataPointer += chunk.auxData }
+            is DaadSkipBytes -> { dataPointer += chunk.skipBytes }
             is ScreenBitmapChunk -> { dataPointer = render.screenBitmapChunk(image, chunk, dataPointer) }
             is ScreenPaletteChunk -> { render.screenPalette(chunk) }
             is V9990CmdChunk -> { render.commandV9990(image, chunk) }
@@ -183,7 +183,7 @@ class ImageRender(
     }
 
     fun clear(image: BufferedImage, color: Int) {
-        fill(image, 0, 0, image.width, image.height, LogicalOp.IMP, 0xffff, color)
+        fill(image, V9990CmdChunk(0,0, 0,0, image.width,image.height, 0, LogicalOp.IMP, 0xffff, color, 0, Command.LMMV))
     }
 
     fun screenBitmapChunk(image: BufferedImage, chunk: ScreenBitmapChunk, dataPointer: Int): Int {
@@ -221,45 +221,112 @@ class ImageRender(
     fun commandV9990(image: BufferedImage, chunk: V9990CmdChunk)
     {
         when (chunk.cmd) {
-            Command.Line, Command.Search, Command.Point, Command.Pset, Command.Advance -> { TODO() }
-            Command.Stop -> { TODO() }
-            Command.LMMV -> { fill(image, chunk.dx, chunk.dy, chunk.nx, chunk.ny, chunk.log, chunk.mask, chunk.foreColor) }
-            Command.LMMM -> { copy(image, chunk.sx, chunk.sy, chunk.dx, chunk.dy, chunk.nx, chunk.ny, chunk.log, chunk.mask) }
-            Command.LMMC -> { startSendData(chunk.dx, chunk.dy, chunk.nx, chunk.ny, chunk.log) }
-            else -> {
-                throw RuntimeException("Unknown V9990 Command type (${chunk.cmd.value})")
+            Command.Stop -> {}
+            Command.LMMV -> fill(image, chunk)
+            Command.LMMM -> copy(image, chunk)
+            Command.LMMC -> startSendData(chunk)
+            Command.BMXL -> linToRec(image, (chunk.sy shl 8) or chunk.sx, chunk.dx, chunk.dy, chunk.nx, chunk.ny)
+            Command.BMLX -> recToLin(image, chunk.sx, chunk.sy, chunk.nx, chunk.ny, (chunk.dy shl 8) or chunk.dx)
+            Command.BMLL -> linToLin(image, (chunk.sy shl 8) or chunk.sx, (chunk.dy shl 8) or chunk.dx, (chunk.ny shl 8) or chunk.nx)
+            Command.CMMC -> TODO("CMMC Not implemented yet")
+            Command.CMMM -> TODO("CMMM Not implemented yet")
+            Command.Line -> drawLine(image, chunk)
+            Command.Pset -> pset(image, chunk)
+            Command.Point -> TODO("Point command Not implemented")
+            Command.Search -> TODO("Search Not implemented yet")
+            Command.Advance -> TODO("Advance Not implemented yet")
+            else -> throw RuntimeException("Unknown V9990 Command type (${chunk.cmd.value})")
+        }
+    }
+
+    private fun drawLine(image: BufferedImage, chunk: V9990CmdChunk)
+    {
+        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
+        val sx = chunk.dx
+        val sy = chunk.dy
+        val mj = chunk.nx
+        val mi = chunk.ny
+        val diy = ((chunk.arg.toInt() shr 3) and 1) * -2 + 1
+        val dix = ((chunk.arg.toInt() shr 2) and 1) * -2 + 1
+        val dx = sx + mj * dix
+        val dy = sy + mi * diy
+
+        val g = image.createGraphics() as Graphics2D
+        g.color = Color(paletteType.toRGB24(chunk.foreColor and chunk.mask))
+        g.drawLine(sx, sy, dx, dy)
+    }
+
+    private fun fill(image: BufferedImage, chunk: V9990CmdChunk)
+    {
+        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
+        val g = image.createGraphics() as Graphics2D
+        g.color = Color(paletteType.toRGB24(chunk.foreColor and chunk.mask))
+        g.fillRect(chunk.dx, chunk.dy, chunk.nx, chunk.ny)
+    }
+
+    private fun copy(image: BufferedImage, chunk: V9990CmdChunk)
+    {
+        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
+        if (chunk.mask != 0xffff) { TODO("mask not implemented ($chunk.mask)") }
+
+        val g = image.createGraphics() as Graphics2D
+        g.copyArea(chunk.sx, chunk.sy, chunk.nx, chunk.ny, chunk.dx-chunk.sx, chunk.dy-chunk.sy)
+    }
+
+    private fun pset(image: BufferedImage, chunk: V9990CmdChunk) {
+        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
+        image.setRGB(chunk.dx, chunk.dy, paletteType.toRGB24(chunk.foreColor and chunk.mask))
+    }
+
+    private fun linToRec(image: BufferedImage, address: Int, dx: Int, dy: Int, nx: Int, ny: Int) {
+        val bytesPerPixel = if (pixelType.isShortSized()) 2 else 1
+        var sx = (address / bytesPerPixel) % image.width
+        var sy = (address / bytesPerPixel) / image.width
+        val pixels = ArrayList<Int>(0)
+
+        for (pos in 0 until nx*ny) {
+            pixels.add(image.getRGB(sx, sy))
+            if (++sx >= image.width) { sx = 0 ; sy++ }
+        }
+        image.setRGB(dx, dy, nx, ny, pixels.toIntArray(), 0, nx)
+    }
+
+    private fun recToLin(image: BufferedImage, sx: Int, sy: Int, nx: Int, ny: Int, address: Int) {
+        val bytesPerPixel = if (pixelType.isShortSized()) 2 else 1
+        var dx = (address / bytesPerPixel) % image.width
+        var dy = (address / bytesPerPixel) / image.width
+
+        for (y in 0 until ny) {
+            for (x in 0 until nx) {
+                val pixel = image.getRGB(sx+x, sy+y)
+                image.setRGB(dx, dy, pixel)
+                if (++dx >= image.width) { dx = 0 ; dy++ }
             }
         }
     }
 
-    private fun fill(image: BufferedImage,
-             dx: Int, dy: Int, nx: Int, ny: Int,
-             log: LogicalOp, mask: Int,
-             foreColor: Int)
-    {
-        if (log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${log.value})") }
-        val g = image.createGraphics() as Graphics2D
-        g.color = Color(paletteType.toRGB24(foreColor and mask))
-        g.fillRect(dx, dy, nx, ny)
+    private fun linToLin(image: BufferedImage, srcAddress: Int, dstAddress: Int, numBytes: Int) {
+        val bytesPerPixel = if (pixelType.isShortSized()) 2 else 1
+        var sx = (srcAddress / bytesPerPixel) % image.width
+        var sy = (srcAddress / bytesPerPixel) / image.width
+        var dx = (dstAddress / bytesPerPixel) % image.width
+        var dy = (dstAddress / bytesPerPixel) / image.width
+        var numPîxels = numBytes / bytesPerPixel
+
+        while (numPîxels-- > 0) {
+            val pixel = image.getRGB(sx, sy)
+            image.setRGB(dx, dy, pixel)
+            if (++sx >= image.width) { sx = 0 ; sy++ }
+            if (++dx >= image.width) { dx = 0 ; dy++ }
+        }
     }
 
-    private fun copy(image: BufferedImage,
-             sx: Int, sy: Int, dx: Int, dy: Int, nx: Int, ny: Int,
-             log: LogicalOp, mask: Int)
+    private fun startSendData(chunk: V9990CmdChunk)
     {
-        if (log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${log.value})") }
-        if (mask != 0xffff) { TODO("mask not implemented ($mask)") }
+        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
 
-        val g = image.createGraphics() as Graphics2D
-        g.copyArea(sx, sy, nx, ny, dx-sx, dy-sy)
-    }
-
-    private fun startSendData(dx: Int, dy: Int, nx: Int, ny: Int, log: LogicalOp)
-    {
-        if (log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${log.value})") }
-
-        dataRect = Rectangle(dx, dy, nx, ny)
-        dataLogicalOp = log
+        dataRect = Rectangle(chunk.dx, chunk.dy, chunk.nx, chunk.ny)
+        dataLogicalOp = chunk.log
         dataOutput = DataByteArrayOutputStream()
     }
 

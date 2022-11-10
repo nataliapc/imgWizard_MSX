@@ -14,34 +14,17 @@ import java.io.DataInputStream
         Offset Size  Description
         --header--
         0x0000  1    Chunk type: (17:ClearWindow)
-        0x0001  2    Chunk data length (0x0000)
-        0x0003  2    Empty chunk header (0x0000)
+        0x0001  2    Extra header length (0)
+        0x0003  2    Data length (0)
  */
-class DaadClearWindow() : ChunkAbstractImpl(17)
+class DaadClearWindow : ChunkAbstractImpl(17)
 {
     companion object : ChunkCompanion {
         override fun from(stream: DataInputStream): Chunk {
-            val id = stream.readUnsignedByte()
-            stream.readUnsignedShortLE()                    // Skip length
-            val aux = stream.readUnsignedShortLE()
-
             val obj = DaadClearWindow()
-            obj.auxData = aux
-            obj.checkId(id)
+            obj.readChunk(stream)
             return obj
         }
-    }
-
-    override fun build(): ByteArray
-    {
-        val header = buildHeader()
-        val out = DataByteArrayOutputStream()
-
-        out.write(header)
-        out.writeShortLE(0)
-        out.writeShortLE(auxData)
-
-        return out.toByteArray()
     }
 
     override fun getInfo(): Array<String> {

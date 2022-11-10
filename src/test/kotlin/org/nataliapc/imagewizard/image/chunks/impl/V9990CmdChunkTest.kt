@@ -20,7 +20,7 @@ internal class V9990CmdChunkTest {
 
         assertEquals(32, chunk.getId())
         assertArrayEquals(
-            byteArrayOf(32, 21,0, 0,0, 1,0, 2,0, 3,0, 4,0, 5,0, 6,0, 7, 0, 9,0, 10,0, 11,0, 0),
+            byteArrayOf(32, 0,0, 21,0, 1,0, 2,0, 3,0, 4,0, 5,0, 6,0, 7, 0, 9,0, 10,0, 11,0, 0),
             result
         )
     }

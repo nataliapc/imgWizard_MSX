@@ -14,6 +14,8 @@ enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: 
     var maxColors: Int = 0
         private set
 
+    fun id(): Int = values().indexOf(this)
+
     private val rIni: Int = rMask.countTrailingZeroBits()
     private val gIni: Int = gMask.countTrailingZeroBits()
     private val bIni: Int = bMask.countTrailingZeroBits()

@@ -5,7 +5,6 @@ import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.ImgXFactory
 import org.nataliapc.imagewizard.image.ImgXRepository
-import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
@@ -111,9 +110,9 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         else -> Chipset.V9938
     }
 
-    val dataChunks = splitDataInChunks(image.getRectangle(0, 0, image.width, lines), compressor)
+    val dataChunks = splitDataInChunks(image.getRectangle(0, 0, image.width, lines), compressor, ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE)
     dataChunks.forEach {
-        if (it.size == MAX_CHUNK_DATA_SIZE) {
+        if (it.size == ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(ScreenBitmapChunk(it, Raw()))
         } else {
             imgx.add(V9990CmdDataChunk(it, compressor))
@@ -157,9 +156,9 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     infoChunk.paletteType = paletteType
     infoChunk.chipset = Chipset.V9990
 
-    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor)
+    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor, V9990CmdDataChunk.MAX_CHUNK_DATA_SIZE)
     dataChunks.forEach {
-        if (it.size == MAX_CHUNK_DATA_SIZE) {
+        if (it.size == V9990CmdDataChunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(V9990CmdDataChunk(it, Raw()))
         } else {
             imgx.add(V9990CmdDataChunk(it, compressor))
@@ -190,7 +189,7 @@ fun cmdR_LocationRedirection(args: Array<String>)
     val fileOut = File(args[1])
     println("### Creating file ${fileOut.name}")
 
-    val imgx = ImgXFactory().getInstance(false).add(DaadRedirectToImage(location.toShort()))
+    val imgx = ImgXFactory().getInstance(false).add(DaadRedirectToImage(location))
     ImgXRepository().save(imgx, fileOut)
     imgx.printInfo()
 }
@@ -347,10 +346,9 @@ private fun checkNumericArg(value: String): Int
     }
 }
 
-private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor): List<ByteArray>
+private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor, maxChunkDataSize: Int): List<ByteArray>
 {
     val maxSize = MAX_SIZE_UNCOMPRESSED
-    val maxChunkDataSize = MAX_CHUNK_DATA_SIZE - 1
     val out = arrayListOf<ByteArray>()
     var start = 0
     var end: Int
@@ -486,6 +484,8 @@ private fun showHelp(exit: Boolean = true)
             "                 RLE: light compression but fast load (default).\n"+
             "                 PLETTER: high compression but slow.\n"+
             "                 PLETTEREXT: Like PLETTER but w/ external compressor binary.\n"+
+            "                 ZX7EXT: ZX7 compressor w/ external compressor binary.\n"+
+            "                 ZX0EXT: ZX0 compressor w/ external compressor binary.\n"+
             " [transparent] Optional: the color index that will become transparent (decimal).\n"+
             "               Compression is forced to RLE.\n"+
             " <target_loc>  Target location number to redirect to.\n"+

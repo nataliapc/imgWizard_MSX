@@ -26,7 +26,7 @@ internal class V9990CmdDataChunkTest {
 
     @Test
     fun from_Ok() {
-        val stream = DataByteArrayInputStream(byteArrayOf(33, 6,0, 5,0, raw.id.toByte(), 0,1,2,3,4))
+        val stream = DataByteArrayInputStream(byteArrayOf(33, 3,0, 5,0, raw.id.toByte(), 5,0, 0,1,2,3,4))
 
         val result = V9990CmdDataChunk.from(stream)
 
@@ -83,7 +83,7 @@ internal class V9990CmdDataChunkTest {
 
         assertEquals(33, chunk.getId())
         assertArrayEquals(
-            byteArrayOf(33, 6,0, 5,0, raw.id.toByte(), 1,2,3,4,5),
+            byteArrayOf(33, 3,0, 5,0, raw.id.toByte(), 5,0, 1,2,3,4,5),
             result
         )
     }
@@ -96,7 +96,7 @@ internal class V9990CmdDataChunkTest {
 
         assertEquals(33, chunk.getId())
         assertArrayEquals(
-            byteArrayOf(33, 27,0, 32,0, rle.id.toByte()) +
+            byteArrayOf(33, 3,0, 26,0, rle.id.toByte(), 32,0) +
             "\u000012234445\u0000\u000a6\u0000\u0004768669\u0000\u000460\u0000\u0000".toByteArray(),
             result
         )
@@ -110,7 +110,7 @@ internal class V9990CmdDataChunkTest {
 
         assertEquals(33, chunk.getId())
         assertArrayEquals(
-            byteArrayOf(33, 16,0, 12,0, pletter.id.toByte(), 1,1,2,3,4,5,-95,4,6,7,-1,-1,-1,-1,-128),
+            byteArrayOf(33, 3,0, 15,0, pletter.id.toByte(), 12,0, 1,1,2,3,4,5,-95,4,6,7,-1,-1,-1,-1,-128),
             result
         )
     }

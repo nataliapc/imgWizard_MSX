@@ -6,6 +6,7 @@ import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.utils.*
 import java.io.DataInputStream
 import java.lang.RuntimeException
+import kotlin.math.abs
 
 
 /*
@@ -13,26 +14,51 @@ import java.lang.RuntimeException
         Offset Size  Description
         --header--
         0x0000  1    Chunk type  (32)
-        0x0001  2    Chunk data length (always 21 bytes)
-        0x0003  2    Empty chunk header (0x0000)
-        ---data---
-        0x0005 ...   RAW VDP Command data (21 bytes length)
+        0x0001  2    Extra header length (0)
+        0x0003  2    Data length (21)
+        --extra header--
+        --data--
+        0x0005  21   All paremeters packed and ready to send
  */
-open class V9990CmdChunk(
-    val sx: Int,            // word (Reg 32-33)
-    val sy: Int,            // word (Reg 34-35)
-    val dx: Int,            // word (Reg 36-37)
-    val dy: Int,            // word (Reg 38-39)
-    val nx: Int,            // word (Reg 40-41)
-    val ny: Int,            // word (Reg 42-43)
-    val arg: Short,         // byte (Reg 44)
-    val log: LogicalOp,     // byte (Reg 45)
-    val mask: Int,          // word (Reg 46-47)
-    val foreColor: Int,     // word (Reg 48-49)
-    val backColor: Int,     // word (Reg 50-51)
-    val cmd: Command        // byte (Reg 52)
-) : ChunkAbstractImpl(32)
+open class V9990CmdChunk private constructor() : ChunkAbstractImpl(32)
 {
+    var sx: Int = 0             // word (Reg 32-33)
+        protected set
+    var sy: Int = 0             // word (Reg 34-35)
+        protected set
+    var dx: Int = 0             // word (Reg 36-37)
+        protected set
+    var dy: Int = 0             // word (Reg 38-39)
+        protected set
+    var nx: Int = 0             // word (Reg 40-41)
+        protected set
+    var ny: Int = 0             // word (Reg 42-43)
+        protected set
+    var arg: Short = 0          // byte (Reg 44)
+        protected set
+    var log = LogicalOp.None    // byte (Reg 45)
+        protected set
+    var mask: Int = 0           // word (Reg 46-47)
+        protected set
+    var foreColor: Int = 0      // word (Reg 48-49)
+        protected set
+    var backColor: Int = 0      // word (Reg 50-51)
+        protected set
+    var cmd = Command.Stop      // byte (Reg 52)
+        protected set
+
+    constructor(
+        sx: Int, sy: Int, dx: Int, dy: Int, nx: Int, ny: Int,
+        arg: Short, log: LogicalOp, mask: Int,
+        foreColor: Int, backColor: Int,
+        cmd: Command
+    ): this() {
+        this.sx = sx ; this.sy = sy; this.dx = dx ; this.dy = dy ; this.nx = nx ; this.ny = ny
+        this.arg = arg ; this.log = log ; this.mask = mask
+        this.foreColor = foreColor ; this.backColor = backColor
+        this.cmd = cmd
+    }
+
     // Operation Commands
     enum class Command(val value: Short, val description: String) {
         Stop(0b00000000, "Stop"),           // Command being executed is stopped.
@@ -92,48 +118,46 @@ open class V9990CmdChunk(
 
     companion object : ChunkCompanion {
         override fun from(stream: DataInputStream): Chunk {
-            val id = stream.readUnsignedByte()
-            stream.readUnsignedShortLE()                    // Skip length
-            val auxData = stream.readUnsignedShortLE()
-
-            val obj = V9990CmdChunk(
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedByte().toShort(),    //arg
-                LogicalOp.valueOf(stream.readUnsignedByte()),
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedShortLE(),
-                stream.readUnsignedShortLE(),
-                Command.valueOf(stream.readUnsignedByte())
-            )
-            obj.checkId(id)
-            obj.auxData = auxData
-
+            val obj = V9990CmdChunk()
+            obj.readChunk(stream)
             return obj
         }
     }
 
-    override fun build(): ByteArray {
+    override fun ensembleExtraHeader(): ByteArray = byteArrayOf()
+
+    override fun readExtraHeader(stream: DataInputStream) {
+        sx = stream.readUnsignedShortLE()
+        sy = stream.readUnsignedShortLE()
+        dx = stream.readUnsignedShortLE()
+        dy = stream.readUnsignedShortLE()
+        nx = stream.readUnsignedShortLE()
+        ny = stream.readUnsignedShortLE()
+        arg = stream.readUnsignedByte().toShort()
+        log = LogicalOp.valueOf(stream.readUnsignedByte())
+        mask = stream.readUnsignedShortLE()
+        foreColor = stream.readUnsignedShortLE()
+        backColor = stream.readUnsignedShortLE()
+        cmd = Command.valueOf(stream.readUnsignedByte())
+    }
+
+    override fun ensembleData(): ByteArray {
         val out = DataByteArrayOutputStream()
-
-        out.writeShortLE(sx)
-        out.writeShortLE(sy)
-        out.writeShortLE(dx)
-        out.writeShortLE(dy)
-        out.writeShortLE(nx)
-        out.writeShortLE(ny)
-        out.writeByte(arg)
-        out.writeByte(log.value)
-        out.writeShortLE(mask)
-        out.writeShortLE(foreColor)
-        out.writeShortLE(backColor)
-        out.writeByte(cmd.value)
-
-        return ensemble(out.toByteArray())
+        out.use {
+            it.writeShortLE(sx)
+            it.writeShortLE(sy)
+            it.writeShortLE(dx)
+            it.writeShortLE(dy)
+            it.writeShortLE(nx)
+            it.writeShortLE(ny)
+            it.writeByte(arg)
+            it.writeByte(log.value)
+            it.writeShortLE(mask)
+            it.writeShortLE(foreColor)
+            it.writeShortLE(backColor)
+            it.writeByte(cmd.value)
+        }
+        return out.toByteArray()
     }
 
     override fun printInfo() {
@@ -151,6 +175,9 @@ open class V9990CmdChunk(
 
     class Copy(srcX: Int, srcY: Int, dstX: Int, dstY: Int, width: Int, height: Int, log: LogicalOp = LogicalOp.IMP) :
         V9990CmdChunk(srcX, srcY, dstX, dstY, width, height, 0, log, 0xffff, 0, 0, Command.LMMM)
+
+    class Pset(posX: Int, posY: Int, color: Int, log: LogicalOp = LogicalOp.IMP) :
+        V9990CmdChunk(0, 0, posX, posY, 0, 0, 0, log, 0xffff, color, 0, Command.Pset)
 
     class LinearToRectangle(address: Int, dx: Int, dy: Int, width: Int, height: Int, inverseX: Boolean = false, inverseY: Boolean = false, log: LogicalOp = LogicalOp.IMP) :
         V9990CmdChunk(
@@ -174,5 +201,16 @@ open class V9990CmdChunk(
             length and 0xff, (length shr 8) and 0xffff,
             0,
             log, 0xffff, 0, 0, Command.BMLL)
+
+    class Line(x1: Int, y1: Int, x2: Int, y2: Int, color: Int, log: LogicalOp = LogicalOp.IMP ) :
+        V9990CmdChunk(0,0, x1,y1, abs(x2 - x1),abs(y2-y1), 0, log, 0xffff, color, 0, Command.Line)
+    {
+        init {
+            var arg = 0
+            if (x1 > x2) arg = arg or 4
+            if (y1 > y2) arg = arg or 8
+            this.arg = arg.toShort()
+        }
+    }
 
 }

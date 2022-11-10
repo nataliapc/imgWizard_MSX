@@ -7,53 +7,55 @@ import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
-
+import java.io.DataOutputStream
+import java.lang.RuntimeException
 
 /*
     Chunk SkipBytes format:
         Offset Size  Description
         --header--
         0x0000  1    Chunk type: (18:SkipBytes)
-        0x0001  2    Chunk data length (0x0000)
-        0x0003  2    VRAM Bytes to skip
+        0x0001  2    Extra header length (2)
+        0x0003  2    Data length (0)
+        --extra header--
+        0x0005  2    VRAM Bytes to skip
  */
-class DaadSkipBytes(skipBytes: Int) : ChunkAbstractImpl(18)
+class DaadSkipBytes private constructor() : ChunkAbstractImpl(18)
 {
-    override var auxData: Int = skipBytes
+    var skipBytes: Int = 0
+        set(value) {
+            if (value !in 0..0xffff) {
+                throw RuntimeException("Bytes to skip must be in range 0..65535")
+            }
+            field = value
+        }
+
+    constructor(skipBytes: Int): this() {
+        this.skipBytes = skipBytes
+    }
 
     companion object : ChunkCompanion {
         override fun from(stream: DataInputStream): DaadSkipBytes {
-            val id = stream.readUnsignedByte()
-            stream.readUnsignedShortLE()                    // Skip length
-            val aux = stream.readUnsignedShortLE()
-
-            val obj = DaadSkipBytes(aux)
-            obj.checkId(id)
+            val obj = DaadSkipBytes()
+            obj.readChunk(stream)
             return obj
         }
     }
 
-    fun getSkipBytes(): Int {
-        return auxData
+    override fun readExtraHeader(stream: DataInputStream) {
+        skipBytes = stream.readUnsignedShortLE()
     }
 
-    fun setSkipBytes(value: Int) {
-        auxData = value
-    }
-
-    override fun build(): ByteArray
-    {
-        val header = buildHeader()
+    override fun ensembleExtraHeader(): ByteArray {
         val out = DataByteArrayOutputStream()
-
-        out.write(header)
-        out.writeShortLE(0)
-        out.writeShortLE(auxData)
-
+        out.use {
+            it.writeShortLE(skipBytes)
+        }
         return out.toByteArray()
     }
 
     override fun getInfo(): Array<String> {
-        return arrayOf("DAAD Skip Bytes ($auxData bytes)")
+        return arrayOf("DAAD Skip Bytes ($skipBytes bytes)")
     }
 }
+

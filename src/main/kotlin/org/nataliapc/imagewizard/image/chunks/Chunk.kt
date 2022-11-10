@@ -16,19 +16,25 @@ interface Chunk
             fun from(stream: DataInputStream): Chunk {
                 val id = stream.readUnsignedByte()
                 val len = stream.readUnsignedShortLE()
+                val len2 = stream.readUnsignedShortLE()
+
                 val buffer = DataByteArrayOutputStream()
                 buffer.writeByte(id)
                 buffer.writeShortLE(len)
-                buffer.writeShortLE(stream.readUnsignedShortLE())
-                buffer.write(stream.readNBytes(len))
+                buffer.writeShortLE(len2)
+                if (id in 2..4) {
+                    //Legacy DAAD Chunks
+                    buffer.write(stream.readNBytes(len))
+                } else {
+                    //New Chunk format
+                    buffer.write(stream.readNBytes(len + len2))
+                }
                 val chunkStream = DataByteArrayInputStream(buffer.toByteArray())
 
                 return when (id) {
                     0 -> DaadRedirectToImage.from(chunkStream)
                     1 -> ScreenPaletteChunk.from(chunkStream)
-                    2 -> ScreenBitmapChunk.from(chunkStream)
-                    3 -> ScreenBitmapChunk.from(chunkStream)
-                    4 -> ScreenBitmapChunk.from(chunkStream)
+                    2,3,4 -> ScreenBitmapChunk.from(chunkStream)
                     16 -> DaadResetWindowGraphicPointer.from(chunkStream)
                     17 -> DaadClearWindow.from(chunkStream)
                     18 -> DaadSkipBytes.from(chunkStream)
@@ -45,7 +51,6 @@ interface Chunk
     }
 
     fun getId(): Int
-    fun setAuxData(value: Int): Chunk
     fun build(): ByteArray
     fun getInfo(): Array<String>
     fun printInfo()

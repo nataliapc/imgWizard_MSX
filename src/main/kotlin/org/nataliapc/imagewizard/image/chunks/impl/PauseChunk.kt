@@ -7,6 +7,7 @@ import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
+import java.lang.RuntimeException
 
 
 /*
@@ -14,46 +15,47 @@ import java.io.DataInputStream
         Offset Size  Description
         --header--
         0x0000  1    Chunk type: (19:Pause)
-        0x0001  2    Chunk data length (0x0000)
-        0x0003  2    Time to wait in 1/50 sec units
+        0x0001  2    Extra header length (2)
+        0x0003  2    Data length (0)
+        --extra header--
+        0x0005  2    Pause ticks
  */
-class PauseChunk(ticks: Int) : ChunkAbstractImpl(19)
+class PauseChunk private constructor() : ChunkAbstractImpl(19)
 {
-    override var auxData: Int = ticks
+    var pauseTicks: Int = 0
+        set(value) {
+            if (value !in 0..0xffff) {
+                throw RuntimeException("Pause ticks must be in range 0..65535")
+            }
+            field = value
+        }
+
+    constructor(pauseTicks: Int) : this() {
+        this.pauseTicks = pauseTicks
+    }
 
     companion object : ChunkCompanion {
         override fun from(stream: DataInputStream): PauseChunk {
-            val id = stream.readUnsignedByte()
-            stream.readUnsignedShortLE()                    // Skip length
-            val aux = stream.readUnsignedShortLE()
-
-            val obj = PauseChunk(aux)
-            obj.checkId(id)
+            val obj = PauseChunk()
+            obj.readChunk(stream)
             return obj
         }
     }
 
-    fun getTicks(): Int {
-        return auxData
-    }
-
-    fun setTicks(value: Int) {
-        auxData = value
-    }
-
-    override fun build(): ByteArray
+    override fun ensembleExtraHeader(): ByteArray
     {
-        val header = buildHeader()
         val out = DataByteArrayOutputStream()
-
-        out.write(header)
-        out.writeShortLE(0)
-        out.writeShortLE(auxData)
-
+        out.use {
+            it.writeShortLE(pauseTicks)
+        }
         return out.toByteArray()
     }
 
+    override fun readExtraHeader(stream: DataInputStream) {
+        pauseTicks = stream.readUnsignedShortLE()
+    }
+
     override fun getInfo(): Array<String> {
-        return arrayOf("Pause Chunk: $auxData ticks (~${"%.1f".format(auxData/50.0)} sec)")
+        return arrayOf("Pause Chunk: $pauseTicks ticks (~${"%.1f".format(pauseTicks/50.0)} sec)")
     }
 }

@@ -17,20 +17,28 @@ import java.lang.RuntimeException
         Offset Size  Description
         --header--
         0x0000  1    Chunk type  (33)
-        0x0001  2    Chunk size (max: 2043 bytes): Compressor Id + Compressed data length
-        0x0003  2    Uncompressed data length in bytes
+        0x0001  2    Extra header length (3)
+        0x0003  2    Data length (1-2040)
+        --extra header--
+        0x0005  1    Compressor ID
+        0x0006  2    Uncompressed data length
         ---data---
-        0x0005  1    Compressor Id
-        0x0006 ...   Compressed data (1-2043 bytes length)
+        0x0008 ...   Compressed data (1-2040 bytes length)
  */
-class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkAbstractImpl(33),
+class V9990CmdDataChunk private constructor() : ChunkAbstractImpl(33),
     ChunkData
 {
+    var compressor = Compressor.Types.byId(0)
     private var compressedData = byteArrayOf()
+    private var uncompressedSize: Int = 0
+
+    private constructor(compressor: Compressor): this() {
+        this.compressor = compressor
+    }
 
     constructor(data: ByteArray, compressor: Compressor) : this(compressor) {
         compressedData = compressor.compress(data)
-        auxData = data.size
+        uncompressedSize = data.size
         if (compressedData.size > MAX_CHUNK_DATA_SIZE) {
             throw RuntimeException("Maximum Chunk data size exceeded (max:$MAX_CHUNK_DATA_SIZE current:${compressedData.size})")
         }
@@ -40,23 +48,15 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
     }
 
     companion object : ChunkCompanion {
+        const val MAX_CHUNK_DATA_SIZE = 2040
+
         override fun from(stream: DataInputStream): V9990CmdDataChunk {
-            val id = stream.readUnsignedByte()
-            val len = stream.readUnsignedShortLE()
-            val auxData = stream.readUnsignedShortLE()
-            val compressor = Compressor.Types.byId(stream.read())
-            val compressedData = stream.readNBytes(len - 1)
-
-            val obj = V9990CmdDataChunk(compressor)
-            obj.auxData = auxData
-            obj.compressedData = compressedData
-            obj.checkId(id)
-
+            val obj = V9990CmdDataChunk()
+            obj.readChunk(stream)
             return obj
         }
 
-        fun fromRectangle(scr: ScreenRectangle, x: Int, y: Int, w: Int, h: Int, compressor: Compressor): V9990CmdDataChunk
-        {
+        fun fromRectangle(scr: ScreenRectangle, x: Int, y: Int, w: Int, h: Int, compressor: Compressor): V9990CmdDataChunk {
             return V9990CmdDataChunk(scr.getRectangle(x, y, w, h), compressor)
         }
     }
@@ -65,23 +65,29 @@ class V9990CmdDataChunk private constructor(val compressor: Compressor) : ChunkA
 
     override fun getUncompressedData(): ByteArray = compressor.uncompress(compressedData)
 
-    override fun build(): ByteArray
-    {
+    override fun readExtraHeader(stream: DataInputStream) {
+        compressor = Compressor.Types.byId(stream.readUnsignedByte())
+        uncompressedSize = stream.readUnsignedShortLE()
+    }
+
+    override fun readData(stream: DataInputStream) {
+        compressedData = stream.readNBytes(dataLength)
+    }
+
+    override fun ensembleExtraHeader(): ByteArray {
         val out = DataByteArrayOutputStream()
-
-        val header = buildHeader()
-
-        out.write(header)
-        out.writeShortLE(compressedData.size + 1)
-        out.writeShortLE(auxData)
-
-        out.writeByte(compressor.id)
-        out.write(compressedData)
-
+        out.use {
+            it.writeByte(compressor.id)
+            it.writeShortLE(uncompressedSize)
+        }
         return out.toByteArray()
     }
 
+    override fun ensembleData(): ByteArray {
+        return compressedData
+    }
+
     override fun printInfo() {
-        println("V9990 ${compressor.javaClass.simpleName.uppercase()} Data Command: $auxData bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/auxData}%]")
+        println("V9990 ${compressor.javaClass.simpleName.uppercase()} Data Command: $uncompressedSize bytes (${compressedData.size} bytes compressed) [${compressedData.size*100/uncompressedSize}%]")
     }
 }

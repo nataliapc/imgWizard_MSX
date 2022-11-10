@@ -26,7 +26,7 @@ internal class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
         private const val magicHeader = "IMGX"
 
         fun from(file: File): ImgX {
-            return from(DataByteArrayInputStream(file.inputStream()))
+            return from(file.inputStream())
         }
 
         fun from(inputStream: InputStream): ImgX {

@@ -4,14 +4,16 @@ import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.image.chunks.ChunkData
-import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
-import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
+import org.nataliapc.imagewizard.image.chunks.ChunkLegacy
+import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 import java.lang.RuntimeException
 
 
 /*
+**** LEGACY CHUNK ****
     Chunk Screen Bitmap format:
         Offset Size  Description
         --header--
@@ -22,9 +24,10 @@ import java.lang.RuntimeException
         0x0005 ...   Compressed data (1-2043 bytes length)
  */
 class ScreenBitmapChunk private constructor(val compressor: Compressor) :
-    ChunkAbstractImpl(ID_BASE + compressor.id), ChunkData
+    ChunkAbstractImpl(ID_BASE + compressor.id), ChunkData, ChunkLegacy
 {
     private var compressedData = byteArrayOf()
+    var auxData: Int = 0
 
     constructor(data: ByteArray, compressor: Compressor) : this(compressor) {
         compressedData = compressor.compress(data)
@@ -43,6 +46,7 @@ class ScreenBitmapChunk private constructor(val compressor: Compressor) :
     }
 
     companion object : ChunkCompanion {
+        const val MAX_CHUNK_DATA_SIZE = 2043
         const val ID_BASE = 2
 
         override fun from(stream: DataInputStream): ScreenBitmapChunk {
@@ -64,7 +68,14 @@ class ScreenBitmapChunk private constructor(val compressor: Compressor) :
 
     override fun build(): ByteArray
     {
-        return ensemble(compressedData)
+        val out = DataByteArrayOutputStream()
+        out.use {
+            it.writeByte(getId())
+            it.writeShortLE(compressedData.size)
+            it.writeShortLE(auxData)
+            it.write(compressedData)
+        }
+        return out.toByteArray()
     }
 
     override fun printInfo() {

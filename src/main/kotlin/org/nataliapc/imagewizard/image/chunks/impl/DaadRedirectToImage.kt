@@ -8,6 +8,7 @@ import org.nataliapc.imagewizard.utils.LittleEndianByteBuffer
 import org.nataliapc.imagewizard.utils.readUnsignedShortLE
 import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
+import java.lang.RuntimeException
 
 
 /*
@@ -15,33 +16,39 @@ import java.io.DataInputStream
         Offset Size  Description
         --header--
         0x0000  1    Chunk type: (0:redirect)
-        0x0001  2    Chunk data length (always 0)
-        0x0003  2    New image location to read
+        0x0001  2    Extra header length (1)
+        0x0003  2    Data length (0)
+        --extra header--
+        0x0005  1    New image location to read
  */
-class DaadRedirectToImage(val location: Short) : ChunkAbstractImpl(0)
+class DaadRedirectToImage private constructor() : ChunkAbstractImpl(0)
 {
+    var location: Int = 0
+        set(value) {
+            if (value !in 0..0xff) {
+                throw RuntimeException("Location must be in range 0..255")
+            }
+            field = value
+        }
+
+    constructor(location: Int) : this() {
+        this.location = location
+    }
+
     companion object : ChunkCompanion {
         override fun from(stream: DataInputStream): DaadRedirectToImage {
-            val id = stream.readUnsignedByte()
-            stream.readUnsignedShortLE()                    // Skip length
-            val aux = stream.readUnsignedShortLE()
-
-            val obj = DaadRedirectToImage(aux.toShort())
-            obj.checkId(id)
+            val obj = DaadRedirectToImage()
+            obj.readChunk(stream)
             return obj
         }
     }
 
-    override fun build(): ByteArray
-    {
-        val header = buildHeader()
-        val out = DataByteArrayOutputStream()
+    override fun readExtraHeader(stream: DataInputStream) {
+        location = stream.readUnsignedByte()
+    }
 
-        out.write(header)
-        out.writeShortLE(0)
-        out.writeShortLE(location)
-
-        return out.toByteArray()
+    override fun ensembleExtraHeader(): ByteArray {
+        return byteArrayOf(location.toByte())
     }
 
     override fun getInfo(): Array<String> {

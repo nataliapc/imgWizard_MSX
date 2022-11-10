@@ -1,7 +1,6 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.junit.jupiter.api.Test
-
 import org.junit.jupiter.api.Assertions.*
 import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
 
@@ -10,19 +9,19 @@ internal class PauseChunkTest {
 
     @Test
     fun from_Ok() {
-        val stream = DataByteArrayInputStream(byteArrayOf(19, 0,0, 50,0))
+        val stream = DataByteArrayInputStream(byteArrayOf(19, 2,0, 0,0, 50,0))
 
         val result = PauseChunk.from(stream)
 
         assertEquals(19, result.getId())
-        assertEquals(50, result.getTicks())
+        assertEquals(50, result.pauseTicks)
     }
 
     @Test
     fun getTicks_Ok() {
         val chunk = PauseChunk(50)
 
-        val result = chunk.getTicks();
+        val result = chunk.pauseTicks
 
         assertEquals(50, result)
     }
@@ -30,9 +29,9 @@ internal class PauseChunkTest {
     @Test
     fun setTicks_Ok() {
         val chunk = PauseChunk(50)
-        chunk.setTicks(25);
+        chunk.pauseTicks = 25
 
-        assertEquals(25, chunk.getTicks())
+        assertEquals(25, chunk.pauseTicks)
     }
 
     @Test
@@ -40,7 +39,7 @@ internal class PauseChunkTest {
         val result = PauseChunk(50).build()
 
         assertArrayEquals(
-            byteArrayOf(19, 0,0, 50,0),
+            byteArrayOf(19, 2,0, 0,0, 50,0),
             result
         )
     }
