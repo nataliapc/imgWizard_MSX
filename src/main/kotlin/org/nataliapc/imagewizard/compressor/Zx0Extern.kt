@@ -1,6 +1,5 @@
 package org.nataliapc.imagewizard.compressor
 
-import org.nataliapc.imagewizard.utils.AsmZ80Helper
 import java.io.File
 
 class Zx0Extern : CompressorImpl(4) {

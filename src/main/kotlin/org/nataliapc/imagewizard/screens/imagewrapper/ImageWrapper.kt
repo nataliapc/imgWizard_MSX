@@ -10,7 +10,7 @@ import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
-import org.nataliapc.imagewizard.utils.*
+import org.nataliapc.utils.*
 import java.awt.Color
 import java.awt.Graphics2D
 import java.awt.Rectangle
@@ -22,7 +22,6 @@ import java.lang.Math.*
 import java.lang.RuntimeException
 import javax.imageio.ImageIO
 import kotlin.math.pow
-import kotlin.math.ceil
 
 
 interface ImageWrapper: ScreenRectangle, ScreenFullImage

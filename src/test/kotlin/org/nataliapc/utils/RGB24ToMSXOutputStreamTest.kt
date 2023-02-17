@@ -1,9 +1,8 @@
-package org.nataliapc.imagewizard.utils
+package org.nataliapc.utils
 
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import java.lang.RuntimeException

@@ -1,9 +1,7 @@
 package org.nataliapc.imagewizard.compressor
 
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
-import org.nataliapc.imagewizard.utils.toHex
 
 
 /**

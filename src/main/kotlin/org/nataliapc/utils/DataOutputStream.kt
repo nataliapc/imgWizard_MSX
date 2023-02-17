@@ -1,5 +1,5 @@
 @file:JvmName("DataOutputStreamKt")
-package org.nataliapc.imagewizard.utils
+package org.nataliapc.utils
 
 import java.io.DataOutputStream
 

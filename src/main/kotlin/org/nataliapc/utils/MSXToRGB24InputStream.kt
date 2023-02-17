@@ -1,4 +1,4 @@
-package org.nataliapc.imagewizard.utils
+package org.nataliapc.utils
 
 import org.nataliapc.imagewizard.screens.PaletteMSX
 import org.nataliapc.imagewizard.screens.enums.PaletteType

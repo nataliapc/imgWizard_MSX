@@ -1,4 +1,4 @@
-package org.nataliapc.imagewizard.utils
+package org.nataliapc.utils
 
 import java.nio.ByteOrder
 import java.nio.ByteBuffer

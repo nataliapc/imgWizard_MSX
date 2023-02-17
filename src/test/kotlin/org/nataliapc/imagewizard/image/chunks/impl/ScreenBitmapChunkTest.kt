@@ -1,18 +1,13 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.junit.jupiter.api.Assertions.*
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.nataliapc.imagewizard.compressor.Pletter
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.compressor.Zx7MiniExtern
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayInputStream
 import org.nataliapc.imagewizard.image.chunks.impl.ScreenBitmapChunk.Companion.ID_BASE
-import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
-import org.nataliapc.imagewizard.screens.enums.FileExt
-import java.io.InputStream
 import kotlin.test.assertEquals
 
 

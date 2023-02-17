@@ -3,7 +3,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayInputStream
 
 internal class DaadResetWindowGraphicPointerTest {
 

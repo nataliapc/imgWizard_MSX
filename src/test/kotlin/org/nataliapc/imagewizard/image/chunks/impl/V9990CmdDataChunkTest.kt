@@ -8,8 +8,8 @@ import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
+import org.nataliapc.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayOutputStream
 import java.lang.RuntimeException
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream

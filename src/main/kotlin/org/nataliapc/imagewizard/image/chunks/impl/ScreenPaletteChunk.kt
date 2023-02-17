@@ -5,9 +5,9 @@ import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
 import org.nataliapc.imagewizard.image.chunks.ChunkLegacy
 import org.nataliapc.imagewizard.image.chunks.ChunkPalette
 import org.nataliapc.imagewizard.screens.PaletteMSX
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.readUnsignedShortLE
-import org.nataliapc.imagewizard.utils.writeShortLE
+import org.nataliapc.utils.DataByteArrayOutputStream
+import org.nataliapc.utils.readUnsignedShortLE
+import org.nataliapc.utils.writeShortLE
 import java.io.DataInputStream
 import java.lang.RuntimeException
 

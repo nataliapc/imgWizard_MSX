@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.nataliapc.imagewizard.image.chunks.impl.DaadClearWindow
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayInputStream
 import java.lang.RuntimeException
 
 

@@ -1,6 +1,6 @@
 package org.nataliapc.imagewizard.compressor
 
-import org.nataliapc.imagewizard.utils.AsmZ80Helper
+import org.nataliapc.utils.AsmZ80Helper
 import java.lang.Exception
 import java.util.*
 

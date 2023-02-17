@@ -1,11 +1,7 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
-import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.readUnsignedShortLE
-import org.nataliapc.imagewizard.utils.writeShortLE
 import java.io.DataInputStream
 
 

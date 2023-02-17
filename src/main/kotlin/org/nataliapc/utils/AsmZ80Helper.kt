@@ -1,4 +1,4 @@
-package org.nataliapc.imagewizard.utils
+package org.nataliapc.utils
 
 import java.util.*
 import kotlin.math.pow

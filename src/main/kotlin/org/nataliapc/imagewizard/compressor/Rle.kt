@@ -1,8 +1,8 @@
 package org.nataliapc.imagewizard.compressor
 
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.writeShortLE
+import org.nataliapc.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayOutputStream
+import org.nataliapc.utils.writeShortLE
 import java.lang.Integer.min
 import java.lang.RuntimeException
 

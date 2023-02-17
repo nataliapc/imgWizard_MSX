@@ -1,10 +1,10 @@
 package org.nataliapc.imagewizard.image.chunks
 
 import org.nataliapc.imagewizard.image.chunks.impl.*
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.readUnsignedShortLE
-import org.nataliapc.imagewizard.utils.writeShortLE
+import org.nataliapc.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayOutputStream
+import org.nataliapc.utils.readUnsignedShortLE
+import org.nataliapc.utils.writeShortLE
 import java.io.DataInputStream
 import java.lang.RuntimeException
 
@@ -12,8 +12,8 @@ import java.lang.RuntimeException
 interface Chunk
 {
     class Factory {
-        companion object {
-            fun from(stream: DataInputStream): Chunk {
+        companion object: ChunkCompanion {
+            override fun from(stream: DataInputStream): Chunk {
                 val id = stream.readUnsignedByte()
                 val len = stream.readUnsignedShortLE()
                 val len2 = stream.readUnsignedShortLE()
@@ -55,9 +55,4 @@ interface Chunk
     fun getInfo(): Array<String>
     fun printInfo()
     fun printInfoWithOrdinal(ordinal: Int)
-}
-
-interface ChunkCompanion
-{
-    fun from(stream: DataInputStream): Chunk
 }

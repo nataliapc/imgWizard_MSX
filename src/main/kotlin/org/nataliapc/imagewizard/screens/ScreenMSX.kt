@@ -3,9 +3,9 @@ package org.nataliapc.imagewizard.screens
 import org.nataliapc.imagewizard.screens.enums.*
 import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
-import org.nataliapc.imagewizard.utils.DataByteArrayOutputStream
-import org.nataliapc.imagewizard.utils.readUnsignedShortLE
-import org.nataliapc.imagewizard.utils.writeShortLE
+import org.nataliapc.utils.DataByteArrayOutputStream
+import org.nataliapc.utils.readUnsignedShortLE
+import org.nataliapc.utils.writeShortLE
 import java.io.*
 import java.lang.RuntimeException
 

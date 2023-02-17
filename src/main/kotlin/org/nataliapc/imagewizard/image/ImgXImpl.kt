@@ -7,8 +7,7 @@ import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import org.nataliapc.imagewizard.utils.toCharString
+import org.nataliapc.utils.toCharString
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream

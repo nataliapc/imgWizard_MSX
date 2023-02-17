@@ -3,7 +3,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
-import org.nataliapc.imagewizard.utils.*
+import org.nataliapc.utils.*
 import java.io.DataInputStream
 import java.lang.RuntimeException
 import kotlin.math.abs

@@ -1,8 +1,8 @@
 package org.nataliapc.imagewizard.screens
 
 import org.nataliapc.imagewizard.screens.enums.PaletteType
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
-import org.nataliapc.imagewizard.utils.readUnsignedShortLE
+import org.nataliapc.utils.DataByteArrayInputStream
+import org.nataliapc.utils.readUnsignedShortLE
 import java.lang.RuntimeException
 
 

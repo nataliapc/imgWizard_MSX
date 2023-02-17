@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk.*
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayInputStream
 
 
 internal class V9990CmdChunkTest {

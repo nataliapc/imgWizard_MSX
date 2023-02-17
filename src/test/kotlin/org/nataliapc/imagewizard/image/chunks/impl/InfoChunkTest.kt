@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.enums.PixelType
-import org.nataliapc.imagewizard.utils.toHex
+import org.nataliapc.utils.toHex
 
 internal class InfoChunkTest {
 

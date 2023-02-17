@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.assertThrows
-import org.nataliapc.imagewizard.utils.DataByteArrayInputStream
+import org.nataliapc.utils.DataByteArrayInputStream
 import java.lang.RuntimeException
 
 internal class DaadRedirectToImageTest {
