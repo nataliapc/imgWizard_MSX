@@ -1,7 +1,7 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.utils.DataByteArrayOutputStream
 import org.nataliapc.utils.readUnsignedShortLE
 import org.nataliapc.utils.writeShortLE
@@ -33,7 +33,7 @@ class PauseChunk private constructor() : ChunkAbstractImpl(19)
         this.pauseTicks = pauseTicks
     }
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): PauseChunk {
             val obj = PauseChunk()
             obj.readChunk(stream)

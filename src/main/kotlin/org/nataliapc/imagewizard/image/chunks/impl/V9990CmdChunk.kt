@@ -2,7 +2,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.utils.*
 import java.io.DataInputStream
 import java.lang.RuntimeException
@@ -116,7 +116,7 @@ open class V9990CmdChunk private constructor() : ChunkAbstractImpl(32)
         }
     }
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): Chunk {
             val obj = V9990CmdChunk()
             obj.readChunk(stream)

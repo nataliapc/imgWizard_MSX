@@ -3,7 +3,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 import org.nataliapc.imagewizard.image.ImgX
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
@@ -41,7 +41,7 @@ class InfoChunk : ChunkAbstractImpl(128)
     var paletteType = PaletteType.Unspecified
     var chipset = Chipset.Unspecified
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): Chunk {
             val obj = InfoChunk()
             obj.readChunk(stream)

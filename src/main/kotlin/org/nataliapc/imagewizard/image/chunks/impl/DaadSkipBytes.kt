@@ -1,7 +1,7 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.utils.DataByteArrayOutputStream
 import org.nataliapc.utils.readUnsignedShortLE
 import org.nataliapc.utils.writeShortLE
@@ -32,7 +32,7 @@ class DaadSkipBytes private constructor() : ChunkAbstractImpl(18)
         this.skipBytes = skipBytes
     }
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): DaadSkipBytes {
             val obj = DaadSkipBytes()
             obj.readChunk(stream)

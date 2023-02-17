@@ -1,7 +1,7 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.imagewizard.image.chunks.ChunkLegacy
 import org.nataliapc.imagewizard.image.chunks.ChunkPalette
 import org.nataliapc.imagewizard.screens.PaletteMSX
@@ -27,7 +27,7 @@ class ScreenPaletteChunk(val palette: ByteArray) : ChunkAbstractImpl(1), ChunkPa
 {
     private var auxData: Int = 0
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): ScreenPaletteChunk {
             val id = stream.readUnsignedByte()
             val len = stream.readUnsignedShortLE()

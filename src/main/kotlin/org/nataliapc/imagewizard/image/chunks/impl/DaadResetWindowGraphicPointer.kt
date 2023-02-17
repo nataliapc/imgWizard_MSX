@@ -1,7 +1,7 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import java.io.DataInputStream
 
 
@@ -15,7 +15,7 @@ import java.io.DataInputStream
  */
 class DaadResetWindowGraphicPointer : ChunkAbstractImpl(16)
 {
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): DaadResetWindowGraphicPointer {
             val obj = DaadResetWindowGraphicPointer()
             obj.readChunk(stream)

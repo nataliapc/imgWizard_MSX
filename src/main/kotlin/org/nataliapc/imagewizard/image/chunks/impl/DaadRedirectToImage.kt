@@ -1,7 +1,7 @@
 package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import java.io.DataInputStream
 import java.lang.RuntimeException
 
@@ -30,7 +30,7 @@ class DaadRedirectToImage private constructor() : ChunkAbstractImpl(0)
         this.location = location
     }
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): DaadRedirectToImage {
             val obj = DaadRedirectToImage()
             obj.readChunk(stream)

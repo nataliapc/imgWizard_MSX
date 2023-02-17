@@ -2,7 +2,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.compressor.Compressor
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.utils.DataByteArrayOutputStream
@@ -47,7 +47,7 @@ class V9990CmdDataChunk private constructor() : ChunkAbstractImpl(33),
         }
     }
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         const val MAX_CHUNK_DATA_SIZE = 2040
 
         override fun from(stream: DataInputStream): V9990CmdDataChunk {

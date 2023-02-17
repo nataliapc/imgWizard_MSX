@@ -2,7 +2,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.compressor.Compressor
-import org.nataliapc.imagewizard.image.chunks.ChunkCompanion
+import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.image.chunks.ChunkLegacy
 import org.nataliapc.utils.DataByteArrayOutputStream
@@ -45,7 +45,7 @@ class ScreenBitmapChunk private constructor(val compressor: Compressor) :
         auxData = uncompressedSize
     }
 
-    companion object : ChunkCompanion {
+    companion object : ChunkCreateFrom {
         const val MAX_CHUNK_DATA_SIZE = 2043
         const val ID_BASE = 2
 
