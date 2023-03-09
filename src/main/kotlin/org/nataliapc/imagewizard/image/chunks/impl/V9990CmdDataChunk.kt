@@ -48,7 +48,8 @@ class V9990CmdDataChunk private constructor() : ChunkAbstractImpl(33),
     }
 
     companion object : ChunkCreateFrom {
-        const val MAX_CHUNK_DATA_SIZE = 2040
+        const val MAX_CHUNK_DATA_SIZE = 2048
+        const val CHUNK_DATA_SIZE_THREESHOLD = 2040
 
         override fun from(stream: DataInputStream): V9990CmdDataChunk {
             val obj = V9990CmdDataChunk()
