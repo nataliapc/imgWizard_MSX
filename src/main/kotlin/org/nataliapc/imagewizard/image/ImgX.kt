@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage
 
 interface ImgX
 {
+    var header: String
     fun getInfoChunk(): InfoChunk?
     fun setInfoChunk(infoChunk: InfoChunk)
     fun get(index: Int): Chunk

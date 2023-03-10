@@ -18,7 +18,7 @@ import java.lang.RuntimeException
 
 
 internal class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
-    private var header: String = magicHeader
+    override var header: String = magicHeader
     private val chunks = mutableListOf<Chunk>()
     private var infoChunk: InfoChunk? = null
 

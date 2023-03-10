@@ -13,7 +13,7 @@ enum class ScreenModeType(
     B0_PAL(0,192,290, signal = Signal.PAL, overscan = true),                // V9990 B0 PAL
     B0_NTSC_I(0,192,240, Interlaced.Enabled, Signal.NTSC, overscan = true), // V9990 B0 NTSC Interlaced
     B0_PAL_I(0,192,290, Interlaced.Enabled, Signal.PAL, overscan = true),   // V9990 B0 PAL Interlaced
-    B1(1,256,212),                                                          // SC5i, SC8i, SC10i, SC12i, V9990 B1
+    B1(1,256,212),                                                          // SC5, SC8, SC10, SC12, V9990 B1
     B1_I(1,256,424, Interlaced.Enabled),                                    // SC5i, SC8i, SC10i, SC12i, V9990 B1 Interlaced
     B2_NTSC(2,384,240, signal = Signal.NTSC, overscan = true),              // V9990 B2 NTSC
     B2_PAL(2,384,290, signal = Signal.PAL, overscan = true),                // V9990 B2 PAL

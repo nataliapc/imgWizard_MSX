@@ -16,6 +16,8 @@ interface ScreenMSX : ScreenRectangle, ScreenFullImage {
     fun saveTo(file: File, start: Int = 0, end: Int = 0)
     val pixelType: PixelType
     val paletteType: PaletteType
+    val chipset: Chipset
+    val extension: FileExt
 }
 
 interface ScreenMSXCompanion {
@@ -50,8 +52,8 @@ internal sealed class ScreenBitmapImpl(
     val screenMode: ScreenModeType,
     final override val pixelType: PixelType,
     final override val paletteType: PaletteType,
-    final val chipset: Chipset = Chipset.V9990,
-    val extension: FileExt = FileExt.Unknown
+    final override val chipset: Chipset = Chipset.V9990,
+    override val extension: FileExt = FileExt.Unknown
 ) : ScreenBitmap {
 
     class SC5 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC5)

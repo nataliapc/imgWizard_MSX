@@ -4,16 +4,15 @@ import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMP
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.ImgXFactory
+import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.ImgXRepository
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.resourcefiles.ResElementFile
 import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
-import org.nataliapc.imagewizard.screens.enums.Chipset
-import org.nataliapc.imagewizard.screens.enums.PixelType
-import org.nataliapc.imagewizard.screens.enums.PaletteType
-import org.nataliapc.imagewizard.screens.enums.PixelAspect
+import org.nataliapc.imagewizard.screens.ScreenMSX
+import org.nataliapc.imagewizard.screens.enums.*
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import java.io.File
 import java.io.FileInputStream
@@ -104,6 +103,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
 
     val imgx = ImgXFactory().getInstance(false)
     imgx.add(DaadClearWindow())
+    imgx.header = image.extension.magicHeader
 
     val dataChunks = splitDataInChunks(image.getRectangle(0, 0, image.width, lines), compressor, ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE)
     dataChunks.forEach {
@@ -114,7 +114,7 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         }
     }
 
-    val fileOut = File(fileIn.nameWithoutExtension + ".imx")
+    val fileOut = File("${fileIn.nameWithoutExtension}.${image.extension.imxExt}")
     println("### Creating file ${fileOut.name}")
 
     ImgXRepository().save(imgx, fileOut)
@@ -251,20 +251,20 @@ fun cmd5A_TransformSC5toSC10(args: Array<String>) {
     if (lines !in 0..212) {
         throw ArgumentOutOfRangeException(lines, cmd)
     }
-    val sc5 = ScreenBitmap.Factory.from(getFile(args[sc5Idx]))
-    val sca = ScreenBitmap.Factory.getSC10()
-    if (sc5 !is ScreenBitmapImpl.SC5) {
+    val sc5Image = ScreenBitmap.Factory.from(getFile(args[sc5Idx]))
+    val scaImage = ScreenBitmap.Factory.getSC10()
+    if (sc5Image !is ScreenBitmapImpl.SC5) {
         throw ImgWizardException("Input file might not be an SC5 file", cmd)
     }
 
     for (y in 0 until lines) {
-        for (x in 0..sc5.width) {
+        for (x in 0..sc5Image.width) {
             TODO()  //TODO
         }
     }
 
     val fileOut = File(args[scaIdx])
-    sca.saveTo(fileOut)
+    scaImage.saveTo(fileOut)
 }
 
 // ca <fileIn.SCC> <fileOut.SCA> [lines]

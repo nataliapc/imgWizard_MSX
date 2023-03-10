@@ -40,7 +40,7 @@ internal class InfoChunkTest {
         val palettes = arrayOf(PaletteType.GRB333, PaletteType.GRB333, PaletteType.GRB333, PaletteType.GRB332, PaletteType.GRB333, PaletteType.Unspecified, PaletteType.Unspecified)
 
         for (i in 0..6) {
-            val result = InfoChunk.fromMagic(magics[i]).build()
+            val result = InfoChunk.fromMagic(magics[i])!!.build()
             assertArrayEquals(
                 byteArrayOf(128.toByte(),
                     10,0,
