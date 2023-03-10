@@ -41,6 +41,7 @@ class InfoChunk : ChunkAbstractImpl(128)
     var paletteType = PaletteType.Unspecified
     var chipset = Chipset.Unspecified
 
+
     companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): Chunk {
             val obj = InfoChunk()
@@ -48,9 +49,10 @@ class InfoChunk : ChunkAbstractImpl(128)
             return obj
         }
 
-        fun fromMagic(magicHeader: String): InfoChunk {
+        fun fromMagic(magicHeader: String): InfoChunk? {
             val obj = InfoChunk()
             obj.let {
+                it.infoVersion = 0
                 it.originalHeight = 212
                 it.chipset = Chipset.V9938
                 when (magicHeader.substring(3)) {
@@ -61,8 +63,7 @@ class InfoChunk : ChunkAbstractImpl(128)
                     "A" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJKP; it.paletteType = PaletteType.GRB333 }
                     "C" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJK; it.paletteType = PaletteType.Unspecified }
                     else -> {
-                        it.originalHeight = 0
-                        it.chipset = Chipset.Unspecified
+                        return null
                     }
                 }
             }
@@ -101,8 +102,13 @@ class InfoChunk : ChunkAbstractImpl(128)
     }
 
     override fun getInfo(): Array<String> {
+        val versionDescription = if (infoVersion == 0) {
+            "not found (legacy defaults)"
+        } else {
+            "v$infoVersion"
+        }
         return arrayOf(
-            "Image Info v$infoVersion",
+            "Image Info $versionDescription",
             "        Chunk count ...... $chunkCount",
             "        Original Width ... $originalWidth",
             "        Original Height .. $originalHeight",

@@ -106,7 +106,7 @@ internal class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
 
     override fun build(withInfoChunk: Boolean): ByteArray {
         val output = ByteArrayOutputStream(0)
-        output.write(magicHeader.toByteArray())
+        output.write(header.toByteArray())
 
         infoChunk?.update(this)
 

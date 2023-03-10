@@ -6,6 +6,8 @@ import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.ImgXFactory
 import org.nataliapc.imagewizard.image.ImgXRepository
 import org.nataliapc.imagewizard.image.chunks.impl.*
+import org.nataliapc.imagewizard.resourcefiles.ResElementFile
+import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.enums.Chipset
@@ -46,6 +48,7 @@ fun main(args: Array<String>)
                 "5a" -> cmd5A_TransformSC5toSC10(args)
                 "ca" -> cmdCA_TransformSC12toSC10(args)
                 "v" -> cmdV_ViewImageIMx(args)
+                "res" -> cmdRES_CreateResourceFile(args)
                 else -> showHelp()
             }
             if (verbose) {
@@ -99,23 +102,15 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         TODO("CL option not yet implemented")
     }
 
-    val imgx = ImgXFactory().getInstance()
-    val infoChunk = imgx.get(0) as InfoChunk
-    infoChunk.originalWidth = image.width
-    infoChunk.originalHeight = image.height
-    infoChunk.pixelType = image.pixelType
-    infoChunk.paletteType = image.paletteType
-    infoChunk.chipset = when (image.pixelType) {
-        PixelType.BYJK, PixelType.BYJKP -> Chipset.V9958
-        else -> Chipset.V9938
-    }
+    val imgx = ImgXFactory().getInstance(false)
+    imgx.add(DaadClearWindow())
 
     val dataChunks = splitDataInChunks(image.getRectangle(0, 0, image.width, lines), compressor, ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE)
     dataChunks.forEach {
         if (it.size == ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(ScreenBitmapChunk(it, Raw()))
         } else {
-            imgx.add(V9990CmdDataChunk(it, compressor))
+            imgx.add(ScreenBitmapChunk(it, compressor))
         }
     }
 
@@ -156,7 +151,7 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     infoChunk.paletteType = paletteType
     infoChunk.chipset = Chipset.V9990
 
-    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor, V9990CmdDataChunk.MAX_CHUNK_DATA_SIZE)
+    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor, V9990CmdDataChunk.CHUNK_DATA_SIZE_THREESHOLD)
     dataChunks.forEach {
         if (it.size == V9990CmdDataChunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(V9990CmdDataChunk(it, Raw()))
@@ -217,13 +212,13 @@ fun cmdD_RemoveChunkFromIMx(args: Array<String>)
 // j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3.IM?] ...
 fun cmdJ_JoinImageFiles(args: Array<String>)
 {
-    val cmdIdx = 0
-    val cmd = args[cmdIdx].lowercase()
+    var cmdIdx = 0
+    val cmd = args[cmdIdx++].lowercase()
 
     if (args.size < 3) {
         throw ArgumentException(cmd)
     }
-    val fileOut = File(args[1])
+    val fileOut = File(args[cmdIdx])
 
     var index = 2
     val imgx = ImgXRepository().from(getFile(args[index++]))
@@ -316,11 +311,37 @@ fun cmdV_ViewImageIMx(args: Array<String>) {
     } else {
         val imgx = ImgXRepository().from(fileIn)
         infoChunk = imgx.getInfoChunk()
-        pixelAspectRatio = PixelAspect.getFromInfoChunk(infoChunk!!)
+        pixelAspectRatio = PixelAspect.getFromInfoChunk(infoChunk)
         imgx.render()
     }
 
     ViewFrame("$appname $version", fileIn, infoChunk, origImg, pixelAspectRatio)
+}
+
+fun cmdRES_CreateResourceFile(args: Array<String>)
+{
+    var cmdIdx = 0
+    val cmd = args[cmdIdx++].lowercase()
+
+    if (args.size < 3) {
+        throw ArgumentException(cmd)
+    }
+    val fileOut = File(args[cmdIdx++])
+    val fileInc = File((fileOut.parentFile?.absolutePath ?: ".") + File.separator + fileOut.nameWithoutExtension + "_res.h")
+
+    val compressor = Compressor.Types.valueOf(args[cmdIdx++].uppercase()).instance
+
+    val resFile = ResFileImpl(compressor)
+    while (cmdIdx < args.size) {
+        val resItem = ResElementFile(File(args[cmdIdx++]))
+        println("    Adding '${resItem.getName()}'")
+        resFile.addResource(resItem)
+    }
+
+    println("### Saving Resources file ${fileOut.name}")
+    fileOut.writeBytes(resFile.build(true))
+    println("### Saving Include file ${fileInc.name}")
+    fileInc.writeText(resFile.generateInclude())
 }
 
 private fun getFile(filename: String, verb: String = "Reading"): File
@@ -435,7 +456,8 @@ private val commandLineOptions = hashMapOf<String, String>(
     "d" to "$appname d <fileIn.IM?> <chunk_id>",
     "j" to "$appname j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3] ...",
     "5a" to "$appname 5a <fileIn.SC5> <fileOut.SCA> [lines]",
-    "ca" to "$appname ca <fileIn.SCC> <fileOut.SCA> [lines]"
+    "ca" to "$appname ca <fileIn.SCC> <fileOut.SCA> [lines]",
+    "res" to "$appname res <fileOut.RES> [compressor] <resFile1> <resFile2> ..."
 )
 
 private fun showHelp(exit: Boolean = true)
@@ -476,6 +498,9 @@ private fun showHelp(exit: Boolean = true)
             "CA) Transform a SC12(SCC) image to a YJK SC10(SCA) one:\n"+
             "    ${commandLineOptions["ca"]}\n"+
             "\n"+
+            "RES) Create a RESource file and an Include file from resource files:\n"+
+            "    ${commandLineOptions["res"]}\n"+
+            "\n"+
             " <fileIn>      Input file in format SCx (SC5/SC6/SC7/SC8/SCA/SCC)\n"+
             "               Palette can be inside SCx file or PL5 PL6 PL7 files.\n"+
             " <lines>       Image lines to get from input file.\n"+
@@ -501,6 +526,7 @@ private fun showHelp(exit: Boolean = true)
             "                 BP4 for 16 colors (from 32768 colors palette)\n"+
             "                 BD8 for 256 colors (from 32768 colors palette)\n"+
             "                 BD16 for 32768 fixed colors (GRB555)\n"+
+            " <resFile>     Resource file to add to a RESource compilation\n"+
             "\n"+
             "Example: $appname c image.sc8 96 rle\n"+
             "\n")

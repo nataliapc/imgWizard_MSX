@@ -8,8 +8,8 @@ enum class PixelAspect(val horizontalFactor: Int, val verticalFactor: Int) {
     Ratio12(1,2);
 
     companion object {
-        fun getFromInfoChunk(infoChunk: InfoChunk): PixelAspect {
-            return if (infoChunk.originalWidth == 512 && infoChunk.originalHeight == 212) {
+        fun getFromInfoChunk(infoChunk: InfoChunk?): PixelAspect {
+            return if (infoChunk!=null && infoChunk.originalWidth == 512 && infoChunk.originalHeight == 212) {
                 Ratio12
             } else {
                 Ratio11
