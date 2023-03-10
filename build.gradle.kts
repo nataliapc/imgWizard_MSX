@@ -5,7 +5,7 @@ plugins {
     application
 }
 
-group = "com.natygames"
+group = "org.nataliapc"
 version = "1.0"
 
 repositories {
@@ -24,6 +24,16 @@ tasks.test {
 
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "MainKt"
+    }
+    configurations["compileClasspath"].forEach { file: File ->
+        from(zipTree(file.absoluteFile))
+    }
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 application {
