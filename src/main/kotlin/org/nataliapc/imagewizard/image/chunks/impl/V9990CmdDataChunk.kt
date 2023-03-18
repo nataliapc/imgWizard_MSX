@@ -2,6 +2,7 @@ package org.nataliapc.imagewizard.image.chunks.impl
 
 import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl
 import org.nataliapc.imagewizard.compressor.Compressor
+import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.ChunkCreateFrom
 import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
@@ -39,18 +40,16 @@ class V9990CmdDataChunk private constructor() : ChunkAbstractImpl(33),
     constructor(data: ByteArray, compressor: Compressor) : this(compressor) {
         compressedData = compressor.compress(data)
         uncompressedSize = data.size
-        if (compressedData.size > MAX_CHUNK_DATA_SIZE) {
-            throw RuntimeException("Maximum Chunk data size exceeded (max:$MAX_CHUNK_DATA_SIZE current:${compressedData.size})")
+        if (compressedData.size > Chunk.MAX_CHUNK_DATA_SIZE) {
+            throw RuntimeException("Maximum Chunk data size exceeded (max:${Chunk.MAX_CHUNK_DATA_SIZE} current:${compressedData.size})")
         }
         if (!compressor.uncompress(compressedData).contentEquals(data)) {
             throw RuntimeException("Error uncompressing data with ${compressor.javaClass.simpleName}")
         }
     }
 
-    companion object : ChunkCreateFrom {
-        const val MAX_CHUNK_DATA_SIZE = 2048
-        const val CHUNK_DATA_SIZE_THREESHOLD = 2040
-
+    companion object : ChunkCreateFrom
+    {
         override fun from(stream: DataInputStream): V9990CmdDataChunk {
             val obj = V9990CmdDataChunk()
             obj.readChunk(stream)

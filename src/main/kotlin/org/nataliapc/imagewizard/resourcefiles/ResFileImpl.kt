@@ -5,7 +5,6 @@ import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.utils.DataByteArrayOutputStream
 import org.nataliapc.utils.writeIntLE
 import org.nataliapc.utils.writeShortLE
-import java.io.ByteArrayOutputStream
 import java.util.zip.CRC32C
 
 
@@ -31,7 +30,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
         fun build(): ByteArray
         {
             return DataByteArrayOutputStream().use {
-                it.write(filename.padEnd(13, 0.toChar()).substring(0,13).toByteArray())
+                it.write(filename.toByteArray().copyOf(12).copyOf(13))
                 it.writeIntLE(absolutePosition)
                 it.writeByte(compressor.id)
                 it.writeShortLE(rawSize)
@@ -42,7 +41,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
         }
     }
 
-    private var collection = mutableListOf<ResElement>()
+    private var resCollection = mutableListOf<ResElement>()
     private val resIndex = mutableListOf<IndexResource>()
 
     companion object
@@ -52,7 +51,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
 
     override fun addResource(item: ResElement)
     {
-        collection.add(item)
+        resCollection.add(item)
         resIndex.clear()
     }
 
@@ -62,15 +61,15 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
         val data = DataByteArrayOutputStream()
 
         out.write(magicHeader.toByteArray())
-        out.writeShortLE(collection.size)     // Index elements count
-        data.writeByte(0xff)               // End of index
+        out.writeShortLE(resCollection.size)     // Index elements count
+        data.writeByte(0xff)                    // End of index
 
         val headerIndexRawSize: Long =
                 out.size() +
-                (collection.size.toLong() * IndexResource.sizeOf()) +
+                (resCollection.size.toLong() * IndexResource.sizeOf()) +
                 data.size()
 
-        collection.forEach {
+        resCollection.forEach {
             if (verbose) { print("    Compressing '${it.getName()}'") }
 
             val rawData = it.getContent()

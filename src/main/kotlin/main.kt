@@ -6,6 +6,7 @@ import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.ImgXFactory
 import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.ImgXRepository
+import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.resourcefiles.ResElementFile
 import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
@@ -151,9 +152,9 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     infoChunk.paletteType = paletteType
     infoChunk.chipset = Chipset.V9990
 
-    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor, V9990CmdDataChunk.CHUNK_DATA_SIZE_THREESHOLD)
+    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor, Chunk.CHUNK_DATA_SIZE_THREESHOLD)
     dataChunks.forEach {
-        if (it.size == V9990CmdDataChunk.MAX_CHUNK_DATA_SIZE) {
+        if (it.size == Chunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(V9990CmdDataChunk(it, Raw()))
         } else {
             imgx.add(V9990CmdDataChunk(it, compressor))

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import org.nataliapc.imagewizard.compressor.Pletter
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.compressor.Raw
-import org.nataliapc.imagewizard.image.chunks.ChunkAbstractImpl.Companion.MAX_CHUNK_DATA_SIZE
+import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.utils.DataByteArrayInputStream
@@ -118,7 +118,7 @@ internal class V9990CmdDataChunkTest {
     @Test
     fun build_Fail_ChunkSizeExceeded() {
         assertThrows(RuntimeException::class.java) {
-            V9990CmdDataChunk(ByteArray(MAX_CHUNK_DATA_SIZE + 1), raw)
+            V9990CmdDataChunk(ByteArray(Chunk.MAX_CHUNK_DATA_SIZE + 1), raw)
         }
     }
 

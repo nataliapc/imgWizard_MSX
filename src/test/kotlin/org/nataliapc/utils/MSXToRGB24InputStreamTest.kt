@@ -89,4 +89,15 @@ internal class MSXToRGB24InputStreamTest {
             intArrayOf(0,0,0,1, 1,3,0,2, 0,1,0,3, 1,2,1,0, 0,2,1,1, 1,1,1,2),
             output.toIntArray())
     }
+
+    @Test
+    fun setPalette_byteArray() {
+        //TODO
+    }
+
+    @Test
+    fun setPalette_palette() {
+        //TODO
+    }
+
 }

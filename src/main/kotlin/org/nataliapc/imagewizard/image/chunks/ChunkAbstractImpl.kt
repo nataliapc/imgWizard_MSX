@@ -24,10 +24,6 @@ abstract class ChunkAbstractImpl(private val id: Int): Chunk
     private var extraHeaderLength: Int = 0
     protected var dataLength: Int = 0
 
-    companion object {
-        const val MAX_CHUNK_DATA_SIZE = 2043
-    }
-
     final override fun getId(): Int {
         return id
     }
