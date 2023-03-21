@@ -144,6 +144,10 @@ class ImageWrapperImpl private constructor(): ImageWrapper
         return image.getRGB(x, y)
     }
 
+    override fun getFullBytesFor(x: Int, y: Int): Int {
+        TODO("Not yet implemented")
+    }
+
     override fun render(chunk: Chunk) {
         when (chunk) {
             is DaadRedirectToImage, is PauseChunk -> {}

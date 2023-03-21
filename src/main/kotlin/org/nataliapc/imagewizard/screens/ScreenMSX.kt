@@ -2,12 +2,13 @@ package org.nataliapc.imagewizard.screens
 
 import org.nataliapc.imagewizard.screens.enums.*
 import org.nataliapc.imagewizard.screens.interfaces.ScreenFullImage
+import org.nataliapc.imagewizard.screens.interfaces.ScreenPaletted
 import org.nataliapc.imagewizard.screens.interfaces.ScreenRectangle
 import org.nataliapc.utils.DataByteArrayOutputStream
 import org.nataliapc.utils.readUnsignedShortLE
 import org.nataliapc.utils.writeShortLE
 import java.io.*
-import java.lang.RuntimeException
+import kotlin.RuntimeException
 
 
 interface ScreenMSX : ScreenRectangle, ScreenFullImage {
@@ -54,13 +55,21 @@ internal sealed class ScreenBitmapImpl(
     final override val paletteType: PaletteType,
     final override val chipset: Chipset = Chipset.V9990,
     override val extension: FileExt = FileExt.Unknown
-) : ScreenBitmap {
-
-    class SC5 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC5)
-    class SC6 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP2, PaletteType.GRB333, Chipset.V9938, FileExt.SC6)
-    class SC7 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC7)
+) : ScreenBitmap
+{
+    class SC5 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC5), ScreenPaletted {
+        override fun getPalette(): ByteArray = vram.copyOfRange(0x7680, 0x7680 + 32)
+    }
+    class SC6 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP2, PaletteType.GRB333, Chipset.V9938, FileExt.SC6), ScreenPaletted {
+        override fun getPalette(): ByteArray = vram.copyOfRange(0x7680, 0x7680 + 32)
+    }
+    class SC7 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC7), ScreenPaletted {
+        override fun getPalette(): ByteArray = vram.copyOfRange(0xfa80, 0xfa80 + 32)
+    }
     class SC8 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD8, PaletteType.GRB332, Chipset.V9938, FileExt.SC8)
-    class SC10 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYJKP, PaletteType.GRB333, Chipset.V9958, FileExt.SCA)
+    class SC10 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYJKP, PaletteType.GRB333, Chipset.V9958, FileExt.SCA), ScreenPaletted {
+        override fun getPalette(): ByteArray = vram.copyOfRange(0xfa80, 0xfa80 + 32)
+    }
     class SC12 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYJK, PaletteType.Unspecified, Chipset.V9958, FileExt.SCC)
     class B1withBP4 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB555)
     class B1withBD8 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD8, PaletteType.GRB555)
@@ -107,7 +116,7 @@ internal sealed class ScreenBitmapImpl(
                 FileExt.SC8 -> SC8().from(stream)
                 FileExt.SCA -> SC10().from(stream)
                 FileExt.SCC -> SC12().from(stream)
-                else -> TODO("Not yet implemented")
+                else -> throw RuntimeException("Not supported image type '${extension.name}'")
             }
         }
     }
@@ -152,25 +161,85 @@ internal sealed class ScreenBitmapImpl(
     }
 
     override fun getRectangle(x: Int, y: Int, w: Int, h: Int): ByteArray {
-        return when(this) {
+        val out = DataByteArrayOutputStream()
+        when(this) {
             is SC8 -> {
-                val out = ByteArrayOutputStream()
                 for (yPos in y until y+h) {
                     for (xPos in x until x+w) {
-                        out.write(getPixel(xPos, yPos))
+                        out.write(getFullBytesFor(xPos, yPos))
                     }
                 }
-                out.toByteArray()
             }
-            else -> {
-                TODO("Not yet implemented")
+            is SC5, is SC7 -> {
+                if (x % 2 != 0 || w % 2 !=0) {
+                    throw RuntimeException("Coordenate X and Width must be multiples of 2")
+                }
+                for (yPos in y until y+h) {
+                    for (xPos in x until x+w step 2) {
+                        out.write(getFullBytesFor(xPos, yPos))
+                    }
+                }
             }
+            is SC6 -> {
+                if (x % 4 != 0 || w % 4 !=0) {
+                    throw RuntimeException("Coordenate X and Width must be multiples of 4")
+                }
+                for (yPos in y until y+h) {
+                    for (xPos in x until x+w step 4) {
+                        out.write(getFullBytesFor(xPos, yPos))
+                    }
+                }
+            }
+            is SC10, is SC12 -> {
+                if (x % 4 != 0 || w % 4 !=0) {
+                    throw RuntimeException("Coordenate X and Width must be multiples of 4")
+                }
+                for (yPos in y until y+h) {
+                    for (xPos in x until x+w step 4) {
+                        out.writeInt(getFullBytesFor(xPos, yPos))
+                    }
+                }
+            }
+            else -> { throw RuntimeException("Not a MSX image") }
         }
+        return out.toByteArray()
     }
 
     override fun getPixel(x: Int, y: Int): Int {
         return when(this) {
+            is SC8 -> getFullBytesFor(x, y)
+            is SC5, is SC7 -> {
+                val value = getFullBytesFor(x, y)
+                return when (x % 2) {
+                    0 -> value.shr(4).and(0x0f)
+                    else -> value.and(0x0f)
+                }
+            }
+            is SC6 -> {
+                val value = getFullBytesFor(x, y)
+                return when (x % 4) {
+                    0 -> value.shr(6).and(0x03)
+                    1 -> value.shr(4).and(0x03)
+                    2 -> value.shr(2).and(0x03)
+                    else -> value.and(0x03)
+                }
+            }
+            else -> TODO("Not yet implemented")
+        }
+    }
+
+    override fun getFullBytesFor(x: Int, y: Int): Int {
+        return when(this) {
             is SC8 -> vram[x + y * screenMode.width].toUByte().toInt()
+            is SC5, is SC7 -> vram[(x + y * screenMode.width)/2].toUByte().toInt()
+            is SC6 -> vram[(x + y * screenMode.width)/4].toUByte().toInt()
+            is SC10, is SC12 -> {
+                val x0 = x - x % 4
+                vram[x0 + y * screenMode.width].toUByte().toInt().shl(24)
+                    .or(vram[x0 + y * screenMode.width + 1].toUByte().toInt().shl(16))
+                    .or(vram[x0 + y * screenMode.width + 2].toUByte().toInt().shl(8))
+                    .or(vram[x0 + y * screenMode.width + 3].toUByte().toInt())
+            }
             else -> TODO("Not yet implemented")
         }
     }

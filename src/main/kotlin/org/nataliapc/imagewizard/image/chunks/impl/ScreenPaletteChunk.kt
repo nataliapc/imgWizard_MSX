@@ -27,6 +27,10 @@ class ScreenPaletteChunk(val palette: ByteArray) : ChunkAbstractImpl(1), ChunkPa
 {
     private var auxData: Int = 0
 
+    init {
+        checkPalette()
+    }
+
     companion object : ChunkCreateFrom {
         override fun from(stream: DataInputStream): ScreenPaletteChunk {
             val id = stream.readUnsignedByte()

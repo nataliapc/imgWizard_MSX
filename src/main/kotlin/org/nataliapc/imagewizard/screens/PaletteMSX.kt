@@ -1,6 +1,7 @@
 package org.nataliapc.imagewizard.screens
 
 import org.nataliapc.imagewizard.screens.enums.PaletteType
+import org.nataliapc.imagewizard.screens.interfaces.ScreenPaletted
 import org.nataliapc.utils.DataByteArrayInputStream
 import org.nataliapc.utils.readUnsignedShortLE
 import java.lang.RuntimeException
@@ -25,6 +26,8 @@ private class PaletteMSXImpl(private var paletteType: PaletteType) : PaletteMSX 
     constructor(paletteRaw: ByteArray, paletteType: PaletteType) : this(paletteType) {
         setRaw(paletteRaw)
     }
+
+    constructor(screenMSX: ScreenMSX): this((screenMSX as ScreenPaletted).getPalette(), screenMSX.paletteType)
 
     override fun setRaw(newPalette: ByteArray) {
         if (paletteRaw.size != 32) {

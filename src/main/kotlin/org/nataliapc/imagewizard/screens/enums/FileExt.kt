@@ -3,6 +3,9 @@ package org.nataliapc.imagewizard.screens.enums
 
 enum class FileExt(val fileExtension: String, val imxExt: String, val magicHeader: String) {
     Unknown("", "", ""),
+    PNG("PNG", "", ""),
+    GIF("GIF", "", ""),
+    JPG("JPG", "", ""),
     SC5("SC5", "IM5", "IMG5"),
     SC6("SC6", "IM6", "IMG6"),
     SC7("SC7", "IM7", "IMG7"),

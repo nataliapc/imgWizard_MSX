@@ -15,6 +15,7 @@ import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.ScreenMSX
 import org.nataliapc.imagewizard.screens.enums.*
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
+import org.nataliapc.imagewizard.screens.interfaces.ScreenPaletted
 import java.io.File
 import java.io.FileInputStream
 import java.lang.RuntimeException
@@ -113,6 +114,10 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         } else {
             imgx.add(ScreenBitmapChunk(it, compressor))
         }
+    }
+
+    if (image is ScreenPaletted) {
+        imgx.add(ScreenPaletteChunk(image.getPalette()))
     }
 
     val fileOut = File("${fileIn.nameWithoutExtension}.${image.extension.imxExt}")
