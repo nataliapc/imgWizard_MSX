@@ -60,8 +60,8 @@ class InfoChunk : ChunkAbstractImpl(128)
                     "6" -> { it.originalWidth = 512; it.pixelType = PixelType.BP2; it.paletteType = PaletteType.GRB333 }
                     "7" -> { it.originalWidth = 512; it.pixelType = PixelType.BP4; it.paletteType = PaletteType.GRB333 }
                     "8" -> { it.originalWidth = 256; it.pixelType = PixelType.BD8; it.paletteType = PaletteType.GRB332 }
-                    "A" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJKP; it.paletteType = PaletteType.GRB333 }
-                    "C" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJK; it.paletteType = PaletteType.Unspecified }
+                    "A" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJKP; it.paletteType = PaletteType.GRB333; it.chipset = Chipset.V9958 }
+                    "C" -> { it.originalWidth = 256; it.pixelType = PixelType.BYJK; it.paletteType = PaletteType.Unspecified; it.chipset = Chipset.V9958 }
                     else -> {
                         return null
                     }
@@ -102,14 +102,18 @@ class InfoChunk : ChunkAbstractImpl(128)
     }
 
     override fun getInfo(): Array<String> {
-        val versionDescription = if (infoVersion == 0) {
-            "not found (legacy defaults)"
+        val versionDescription: String
+        val chunkCountStr: String
+        if (infoVersion == 0) {
+            versionDescription = "not found (legacy defaults)"
+            chunkCountStr = "-"
         } else {
-            "v$infoVersion"
+            versionDescription = "v$infoVersion"
+            chunkCountStr = chunkCount.toString()
         }
         return arrayOf(
             "Image Info $versionDescription",
-            "        Chunk count ...... $chunkCount",
+            "        Chunk count ...... $chunkCountStr",
             "        Original Width ... $originalWidth",
             "        Original Height .. $originalHeight",
             "        Pixel Type ....... ${pixelType.name}",

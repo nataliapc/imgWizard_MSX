@@ -55,6 +55,10 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
         resIndex.clear()
     }
 
+    override fun getReource(index: Int): ResElement {
+        return resCollection[index]
+    }
+
     override fun build(verbose: Boolean): ByteArray
     {
         val out = DataByteArrayOutputStream()

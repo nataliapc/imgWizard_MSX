@@ -199,11 +199,13 @@ class ImageRender(
                 it.setPalette(currentPalette!!)
             }
             while (it.available() > 0) {
-                image.setRGB(xPos, yPos, it.readColor())
-                xPos++
-                if (xPos >= image.width) {
-                    xPos = 0
-                    yPos++
+                it.readColor().forEach { color ->
+                    image.setRGB(xPos, yPos, color)
+                    xPos++
+                    if (xPos >= image.width) {
+                        xPos = 0
+                        yPos++
+                    }
                 }
             }
         }
@@ -342,8 +344,10 @@ class ImageRender(
         val out = ArrayList<Int>(0)
         inputStream.use { inStream ->
             while (inStream.available() > 0) {
-                val color = Color(inputStream.readColor(), false)
-                out.add(color.rgb)
+                inputStream.readColor().forEach {
+                    val color = Color(it, false)
+                    out.add(color.rgb)
+                }
             }
         }
         return out.toIntArray()

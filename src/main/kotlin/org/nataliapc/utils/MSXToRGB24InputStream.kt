@@ -1,5 +1,6 @@
 package org.nataliapc.utils
 
+import org.nataliapc.imagewizard.color.ColorYJK
 import org.nataliapc.imagewizard.screens.PaletteMSX
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.enums.PixelType
@@ -32,27 +33,40 @@ class MSXToRGB24InputStream(stream: InputStream, private val pixelType: PixelTyp
         currentPalette = palette
     }
 
-    fun readColor(): Int {
+    fun readColor(): List<Int> {
         return when {
-            pixelType.isShortSized() -> paletteType.toRGB24(readUnsignedShortLE())
+            pixelType == PixelType.BYJK -> {
+                ColorYJK.getRGB24fromYJK(readUnsignedByte(), readUnsignedByte(), readUnsignedByte(), readUnsignedByte())
+            }
+            pixelType == PixelType.BYJKP -> {
+                ColorYJK.getRGB24fromYJKP(readUnsignedByte(), readUnsignedByte(), readUnsignedByte(), readUnsignedByte(), currentPalette!!)
+            }
+            pixelType == PixelType.BYUV -> {
+                TODO("Not yet implemented")
+            }
+            pixelType == PixelType.BYUVP -> {
+                TODO("Not yet implemented")
+            }
+            pixelType.isShortSized() -> listOf(paletteType.toRGB24(readUnsignedShortLE()))
             pixelType.isByteSized() -> {
                 if (pixelType.indexed || isIndexedBD8())
-                    currentPalette?.getColorRGB24(unpackIndexed()) ?: unpackIndexed()
+                    listOf(currentPalette?.getColorRGB24(unpackIndexed()) ?: unpackIndexed())
                 else
-                    paletteType.toRGB24(readUnsignedByte())
+                    listOf(paletteType.toRGB24(readUnsignedByte()))
             }
-            else -> throw RuntimeException("Unknown palette type to read")
+            else -> throw RuntimeException("Unknown pixel type to read (${pixelType.name})")
         }
     }
 
     override fun available(): Int {
         val bytesAvailables = super.available()
         return when {
+            pixelType.isIntSized() -> bytesAvailables / 4
             pixelType.isShortSized() -> bytesAvailables / 2
             pixelType.isByteSized() -> {
                 bytesAvailables * (8 / pixelType.bpp) + (lastBitRead % byteBits) / pixelType.bpp
             }
-            else -> throw RuntimeException("Unknown palette type to read")
+            else -> throw RuntimeException("Unknown pixel type to read (${pixelType.name})")
         }
     }
 

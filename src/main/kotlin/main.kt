@@ -4,7 +4,6 @@ import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMP
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.ImgXFactory
-import org.nataliapc.imagewizard.image.ImgXImpl
 import org.nataliapc.imagewizard.image.ImgXRepository
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.*
@@ -12,7 +11,6 @@ import org.nataliapc.imagewizard.resourcefiles.ResElementFile
 import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
-import org.nataliapc.imagewizard.screens.ScreenMSX
 import org.nataliapc.imagewizard.screens.enums.*
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.screens.interfaces.ScreenPaletted
@@ -89,14 +87,14 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         throw ArgumentException(cmd)
     }
     val fileIn = getFile(args[fileIdx], "Opening")
-    val image = ScreenBitmap.Factory.from(fileIn)
+    val screenMSX = ScreenBitmap.Factory.from(fileIn)
     val lines = checkNumericArg(args[linesIdx])
     val transparent: Byte? = if (args.size==linesIdx+1) null else args[transpIdx].toByteOrNull()
     var compressor: Compressor = Rle(transparent = transparent ?: 0)
     if (transparent == null && args.size == compressorIdx+1) {
         compressor = Compressor.Types.valueOf(args[compressorIdx].uppercase()).instance
     }
-    if (lines < 0 || lines > image.height) {
+    if (lines < 0 || lines > screenMSX.height) {
         throw ImgWizardException("Parameter 'lines' exceeds input screen height", cmd)
     }
     if (args[cmdIdx] == "cl") {
@@ -105,9 +103,9 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
 
     val imgx = ImgXFactory().getInstance(false)
     imgx.add(DaadClearWindow())
-    imgx.header = image.extension.magicHeader
+    imgx.header = screenMSX.extension.magicHeader
 
-    val dataChunks = splitDataInChunks(image.getRectangle(0, 0, image.width, lines), compressor, ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE)
+    val dataChunks = splitDataInChunks(screenMSX.getRectangle(0, 0, screenMSX.width, lines), screenMSX.pixelType.bytesPack, compressor, ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE)
     dataChunks.forEach {
         if (it.size == ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(ScreenBitmapChunk(it, Raw()))
@@ -116,11 +114,11 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
         }
     }
 
-    if (image is ScreenPaletted) {
-        imgx.add(ScreenPaletteChunk(image.getPalette()))
+    if (screenMSX is ScreenPaletted) {
+        imgx.add(ScreenPaletteChunk(screenMSX.getPalette()))
     }
 
-    val fileOut = File("${fileIn.nameWithoutExtension}.${image.extension.imxExt}")
+    val fileOut = File("${fileIn.nameWithoutExtension}.${screenMSX.extension.imxExt}")
     println("### Creating file ${fileOut.name}")
 
     ImgXRepository().save(imgx, fileOut)
@@ -157,7 +155,7 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     infoChunk.paletteType = paletteType
     infoChunk.chipset = Chipset.V9990
 
-    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), compressor, Chunk.CHUNK_DATA_SIZE_THREESHOLD)
+    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), pixelType.bytesPack, compressor, Chunk.CHUNK_DATA_SIZE_THREESHOLD)
     dataChunks.forEach {
         if (it.size == Chunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(V9990CmdDataChunk(it, Raw()))
@@ -373,7 +371,7 @@ private fun checkNumericArg(value: String): Int
     }
 }
 
-private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor, maxChunkDataSize: Int): List<ByteArray>
+private fun splitDataInChunks(dataIn: ByteArray, bytesPack: Int, compressor: Compressor, maxChunkDataSize: Int): List<ByteArray>
 {
     val maxSize = MAX_SIZE_UNCOMPRESSED
     val out = arrayListOf<ByteArray>()
@@ -395,11 +393,11 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor, maxChun
                 dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
                 dataCompressedSize = dataCompressed.size
                 if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
-                if (dataCompressedSize > maxChunkDataSize) break;
-                end = start + (end - start) * 3 / 2
+                if (dataCompressedSize > maxChunkDataSize) break
+                end = (start + (end - start) * 3 / 2) - ((end - start) % bytesPack)
                 if (end > dataIn.size) {
                     end = dataIn.size
-                    break;
+                    break
                 }
             } while (true)
         }
@@ -414,15 +412,19 @@ private fun splitDataInChunks(dataIn: ByteArray, compressor: Compressor, maxChun
             if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
             if (end-start == maxSize && dataCompressedSize <= maxChunkDataSize) break
             if ((lastEnd-end).absoluteValue <= 1 && dataCompressedSize > maxChunkDataSize) {
-                end -= 1 ; lastEnd = end ; continue
+                end -= bytesPack
+                lastEnd = end
+                continue
             }
             if ((lastEnd-end).absoluteValue <= 1 || dataIn.size-start <= maxChunkDataSize-1) break
             if (dataCompressedSize >= maxChunkDataSize-2 && dataCompressedSize <= maxChunkDataSize) break
             aux = end
             if (dataCompressedSize > maxChunkDataSize) {
                 end -= (end-lastEnd).absoluteValue / 2
+                end -= (end - start) % bytesPack
             } else {
                 end += (end-lastEnd).absoluteValue / 2
+                end -= (end - start) % bytesPack
                 if (end >= dataIn.size) {
                     end = dataIn.size
                     break

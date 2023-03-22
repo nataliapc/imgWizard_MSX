@@ -39,6 +39,7 @@ internal class InfoChunkTest {
         val widths = arrayOf(256, 512, 512, 256, 256, 256, 0)
         val pixels = arrayOf(PixelType.BP4, PixelType.BP2, PixelType.BP4, PixelType.BD8, PixelType.BYJKP, PixelType.BYJK, PixelType.Unspecified)
         val palettes = arrayOf(PaletteType.GRB333, PaletteType.GRB333, PaletteType.GRB333, PaletteType.GRB332, PaletteType.GRB333, PaletteType.Unspecified, PaletteType.Unspecified)
+        val chipsets = arrayOf(Chipset.V9938, Chipset.V9938, Chipset.V9938, Chipset.V9938, Chipset.V9958, Chipset.V9958, Chipset.Unspecified)
 
         for (i in 0..6) {
             val chunk = InfoChunk.fromMagic(magics[i])
@@ -53,7 +54,7 @@ internal class InfoChunkTest {
                     (if (i!=6) 212 else 0).toByte(),0,      //Original height
                     pixels[i].id().toByte(),                //Pixel type
                     palettes[i].id().toByte(),              //Palette type
-                    (if (i!=6) Chipset.V9938.id() else Chipset.Unspecified.id()).toByte()   //Chipset
+                    chipsets[i].id().toByte()               //Chipset
                 )
                 assertArrayEquals(expected, result, "Error in screen ${i+5}: ${result.toHex()}")
             } else {

@@ -30,7 +30,9 @@ internal class MSXToRGB24InputStreamTest {
         val stream = MSXToRGB24InputStream(arrayIn, PixelType.BD16, PaletteType.GRB555)
 
         while (stream.available() > 0) {
-            output.add(stream.readColor())
+            stream.readColor().forEach {
+                output.add(it)
+            }
         }
 
         assertArrayEquals(
@@ -43,7 +45,9 @@ internal class MSXToRGB24InputStreamTest {
         val stream = MSXToRGB24InputStream(arrayIn, PixelType.BD8, PaletteType.GRB332)
 
         while (stream.available() > 0) {
-            output.add(stream.readColor())
+            stream.readColor().forEach {
+                output.add(it)
+            }
         }
 
         assertArrayEquals(
@@ -56,7 +60,9 @@ internal class MSXToRGB24InputStreamTest {
         val stream = MSXToRGB24InputStream(arrayIn, PixelType.BD8, PaletteType.GRB555)
 
         while (stream.available() > 0) {
-            output.add(stream.readColor())
+            stream.readColor().forEach {
+                output.add(it)
+            }
         }
 
         assertArrayEquals(
@@ -69,7 +75,9 @@ internal class MSXToRGB24InputStreamTest {
         val stream = MSXToRGB24InputStream(arrayIn, PixelType.BP4, PaletteType.GRB555)
 
         while (stream.available() > 0) {
-            output.add(stream.readColor())
+            stream.readColor().forEach {
+                output.add(it)
+            }
         }
 
         assertArrayEquals(
@@ -82,7 +90,9 @@ internal class MSXToRGB24InputStreamTest {
         val stream = MSXToRGB24InputStream(arrayIn, PixelType.BP2, PaletteType.GRB555)
 
         while (stream.available() > 0) {
-            output.add(stream.readColor())
+            stream.readColor().forEach {
+                output.add(it)
+            }
         }
 
         assertArrayEquals(

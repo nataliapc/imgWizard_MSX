@@ -17,9 +17,9 @@ class ResFileImplTest {
         val resFile = ResFileImpl(compressor)
 
         resFile.addResource(resElement)
-        val result = resFile.
+        val result = resFile.getReource(0)
 
-        assertEquals()
+        assertEquals(resElement, result)
     }
 
     @Test
