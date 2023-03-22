@@ -12,6 +12,9 @@ import kotlin.RuntimeException
 
 
 interface ScreenMSX : ScreenRectangle, ScreenFullImage {
+    var vram: ByteArray
+    val defaultVRAMsizeInBytes: Int
+
     fun from(file: File): ScreenMSX
     fun from(stream: InputStream): ScreenMSX
     fun saveTo(file: File, start: Int = 0, end: Int = 0)
@@ -51,41 +54,42 @@ interface ScreenTiled: ScreenMSX
 
 internal sealed class ScreenBitmapImpl(
     val screenMode: ScreenModeType,
+    final override val defaultVRAMsizeInBytes: Int,
     final override val pixelType: PixelType,
     final override val paletteType: PaletteType,
     final override val chipset: Chipset = Chipset.V9990,
     override val extension: FileExt = FileExt.Unknown
 ) : ScreenBitmap
 {
-    class SC5 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC5), ScreenPaletted {
-        override fun getPalette(): ByteArray = vram.copyOfRange(0x7680, 0x7680 + 32)
-    }
-    class SC6 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP2, PaletteType.GRB333, Chipset.V9938, FileExt.SC6), ScreenPaletted {
-        override fun getPalette(): ByteArray = vram.copyOfRange(0x7680, 0x7680 + 32)
-    }
-    class SC7 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC7), ScreenPaletted {
-        override fun getPalette(): ByteArray = vram.copyOfRange(0xfa80, 0xfa80 + 32)
-    }
-    class SC8 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD8, PaletteType.GRB332, Chipset.V9938, FileExt.SC8)
-    class SC10 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYJKP, PaletteType.GRB333, Chipset.V9958, FileExt.SCA), ScreenPaletted {
-        override fun getPalette(): ByteArray = vram.copyOfRange(0xfa80, 0xfa80 + 32)
-    }
-    class SC12 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYJK, PaletteType.Unspecified, Chipset.V9958, FileExt.SCC)
-    class B1withBP4 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BP4, PaletteType.GRB555)
-    class B1withBD8 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD8, PaletteType.GRB555)
-    class B1withBYUV : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BYUV, PaletteType.GRB555)
-    class B1withBD16 : ScreenBitmapImpl(ScreenModeType.B1, PixelType.BD16, PaletteType.GRB555)
-    class B3withBD16 : ScreenBitmapImpl(ScreenModeType.B3, PixelType.BD16, PaletteType.GRB555)
-    class B5withBD4 : ScreenBitmapImpl(ScreenModeType.B5, PixelType.BP4, PaletteType.GRB555)
-    class B6withBD4 : ScreenBitmapImpl(ScreenModeType.B6, PixelType.BP4, PaletteType.GRB555)
-    class B7withBD4 : ScreenBitmapImpl(ScreenModeType.B7, PixelType.BP4, PaletteType.GRB555)
-    class B7iwithBD4 : ScreenBitmapImpl(ScreenModeType.B7_I, PixelType.BP4, PaletteType.GRB555)
-
     val magicNumber = 0xfe
     val maxVRAMsizeInBytes = chipset.ramKb * 1024
     val screenSizeInBytes: Int = screenMode.width * screenMode.height * pixelType.bpp / 8
     var maxScreenHeight: Int = screenSizeInBytes / screenMode.width
-    lateinit var vram: ByteArray
+    override var vram: ByteArray = ByteArray(maxVRAMsizeInBytes) { 0 }
+
+    class SC5 : ScreenBitmapImpl(ScreenModeType.B1, 30368, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC5), ScreenPaletted {
+        override val paletteOffset = 0x7680
+    }
+    class SC6 : ScreenBitmapImpl(ScreenModeType.B3, 30368, PixelType.BP2, PaletteType.GRB333, Chipset.V9938, FileExt.SC6), ScreenPaletted {
+        override val paletteOffset = 0x7680
+    }
+    class SC7 : ScreenBitmapImpl(ScreenModeType.B3, 64160, PixelType.BP4, PaletteType.GRB333, Chipset.V9938, FileExt.SC7), ScreenPaletted {
+        override val paletteOffset = 0xfa80
+    }
+    class SC8 : ScreenBitmapImpl(ScreenModeType.B1, 54272, PixelType.BD8, PaletteType.GRB332, Chipset.V9938, FileExt.SC8)
+    class SC10 : ScreenBitmapImpl(ScreenModeType.B1, 64160, PixelType.BYJKP, PaletteType.GRB333, Chipset.V9958, FileExt.SCA), ScreenPaletted {
+        override val paletteOffset = 0xfa80
+    }
+    class SC12 : ScreenBitmapImpl(ScreenModeType.B1, 64160, PixelType.BYJK, PaletteType.Unspecified, Chipset.V9958, FileExt.SCC)
+    class B1withBP4 : ScreenBitmapImpl(ScreenModeType.B1, 0, PixelType.BP4, PaletteType.GRB555)
+    class B1withBD8 : ScreenBitmapImpl(ScreenModeType.B1, 0, PixelType.BD8, PaletteType.GRB555)
+    class B1withBYUV : ScreenBitmapImpl(ScreenModeType.B1, 0, PixelType.BYUV, PaletteType.GRB555)
+    class B1withBD16 : ScreenBitmapImpl(ScreenModeType.B1, 0, PixelType.BD16, PaletteType.GRB555)
+    class B3withBD16 : ScreenBitmapImpl(ScreenModeType.B3, 0, PixelType.BD16, PaletteType.GRB555)
+    class B5withBD4 : ScreenBitmapImpl(ScreenModeType.B5, 0, PixelType.BP4, PaletteType.GRB555)
+    class B6withBD4 : ScreenBitmapImpl(ScreenModeType.B6, 0, PixelType.BP4, PaletteType.GRB555)
+    class B7withBD4 : ScreenBitmapImpl(ScreenModeType.B7, 0, PixelType.BP4, PaletteType.GRB555)
+    class B7iwithBD4 : ScreenBitmapImpl(ScreenModeType.B7_I, 0, PixelType.BP4, PaletteType.GRB555)
 
     init {
         if (screenMode.mode >= 4 && pixelType != PixelType.BP4 && pixelType != PixelType.BP2) {
@@ -132,26 +136,25 @@ internal sealed class ScreenBitmapImpl(
     }
 
     override fun from(stream: InputStream): ScreenMSX {
-        vram = ByteArray(maxVRAMsizeInBytes)
-
         val dis = DataInputStream(stream)
         if (dis.readUnsignedByte() != magicNumber) {
             throw RuntimeException("Bad header first byte")
         }
         val startAddress = dis.readUnsignedShortLE()
-        dis.readNBytes(4)                            // Skip 4 bytes (end address, execution address)
+        dis.skip(4)                                     // Skip 4 bytes (end address, execution address)
         dis.readAllBytes().copyInto(vram, startAddress)  // Read full raw VRAM dump
 
         return this
     }
 
     override fun saveTo(file: File, start: Int, end: Int) {
+        val finalEnd = if (end == 0) { defaultVRAMsizeInBytes } else { end }
         DataByteArrayOutputStream().use {
             it.writeByte(magicNumber)
             it.writeShortLE(start)
-            it.writeShortLE(end)
+            it.writeShortLE(finalEnd)
             it.writeShortLE(0)
-            it.write(vram, start, end - start)
+            it.write(vram, start, finalEnd - start)
             file.writeBytes(it.toByteArray())
         }
     }

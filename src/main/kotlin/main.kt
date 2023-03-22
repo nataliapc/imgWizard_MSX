@@ -9,11 +9,13 @@ import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.*
 import org.nataliapc.imagewizard.resourcefiles.ResElementFile
 import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
+import org.nataliapc.imagewizard.screens.PaletteMSX
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.enums.*
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.screens.interfaces.ScreenPaletted
+import org.nataliapc.utils.nibbleLow
 import java.io.File
 import java.io.FileInputStream
 import java.lang.RuntimeException
@@ -22,6 +24,8 @@ import kotlin.math.absoluteValue
 import kotlin.system.exitProcess
 import java.awt.image.BufferedImage
 import java.lang.Integer.min
+import kotlin.experimental.and
+import kotlin.experimental.or
 
 
 const val version = "1.4.00"
@@ -261,13 +265,18 @@ fun cmd5A_TransformSC5toSC10(args: Array<String>) {
         throw ImgWizardException("Input file might not be an SC5 file", cmd)
     }
 
-    for (y in 0 until lines) {
-        for (x in 0..sc5Image.width) {
-            TODO()  //TODO
-        }
+    val size = sc5Image.width / sc5Image.pixelType.pixelsPerByte * lines
+    var posIn = 0
+    var posOut = 0
+    while (posIn <= size) {
+        val orig = sc5Image.vram[posIn++]
+        scaImage.vram[posOut++] = orig.and(0xf0.toByte()).or(0x08)
+        scaImage.vram[posOut++] = orig.nibbleLow().shl(4).or(0x08).toByte()
     }
+    (scaImage as ScreenPaletted).setPalette(PaletteMSX.Factory.from(sc5Image.getPalette(), PaletteType.GRB332))
 
     val fileOut = File(args[scaIdx])
+    println("### Saving file ${fileOut.name}")
     scaImage.saveTo(fileOut)
 }
 

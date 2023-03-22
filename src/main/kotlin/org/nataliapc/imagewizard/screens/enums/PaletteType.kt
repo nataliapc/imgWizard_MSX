@@ -3,7 +3,8 @@ package org.nataliapc.imagewizard.screens.enums
 import java.awt.Color
 import kotlin.math.round
 
-enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: Int, private val bMask: Int) {
+enum class PaletteType(val bpp: Int, private val rMask: Int, private val gMask: Int, private val bMask: Int)
+{
     Unspecified(0, 0,0,0),
     GRB332(8, 0b00011100,0b11100000,0b00000011),
     GRB333(12, 0b000001110000,0b011100000000,0b000000000111),

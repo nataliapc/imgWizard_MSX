@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "org.nataliapc"
-version = "1.4.1"
+version = "1.4.2"
 
 repositories {
     mavenCentral()
