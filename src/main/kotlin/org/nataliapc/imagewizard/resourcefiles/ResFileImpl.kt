@@ -5,7 +5,7 @@ import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.utils.DataByteArrayOutputStream
 import org.nataliapc.utils.writeIntLE
 import org.nataliapc.utils.writeShortLE
-import java.util.zip.CRC32C
+import java.util.zip.CRC32
 
 
 class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
@@ -78,7 +78,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
 
             val rawData = it.getContent()
             val compressedData = compressor.compress(rawData)
-            val crc = CRC32C()
+            val crc = CRC32()
             crc.update(compressedData)
 
             if (verbose) { println("\t${rawData.size} bytes -> ${compressedData.size} bytes") }
