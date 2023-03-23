@@ -248,7 +248,7 @@ fun cmdJ_JoinImageFiles(args: Array<String>)
 fun cmd5A_TransformSC5toSC10(args: Array<String>) {
     val cmdIdx = 0
     val sc5Idx = 1
-    val scaIdx = 2
+    val sc10Idx = 2
     val linesIdx = 3
     val cmd = args[cmdIdx].lowercase()
 
@@ -260,7 +260,7 @@ fun cmd5A_TransformSC5toSC10(args: Array<String>) {
         throw ArgumentOutOfRangeException(lines, cmd)
     }
     val sc5Image = ScreenBitmap.Factory.from(getFile(args[sc5Idx]))
-    val scaImage = ScreenBitmap.Factory.getSC10()
+    val sc10Image = ScreenBitmap.Factory.getSC10()
     if (sc5Image !is ScreenBitmapImpl.SC5) {
         throw ImgWizardException("Input file might not be an SC5 file", cmd)
     }
@@ -270,45 +270,49 @@ fun cmd5A_TransformSC5toSC10(args: Array<String>) {
     var posOut = 0
     while (posIn <= size) {
         val orig = sc5Image.vram[posIn++]
-        scaImage.vram[posOut++] = orig.and(0xf0.toByte()).or(0x08)
-        scaImage.vram[posOut++] = orig.nibbleLow().shl(4).or(0x08).toByte()
+        sc10Image.vram[posOut++] = orig.and(0xf0.toByte()).or(0x08)
+        sc10Image.vram[posOut++] = orig.nibbleLow().shl(4).or(0x08).toByte()
     }
-    (scaImage as ScreenPaletted).setPalette(PaletteMSX.Factory.from(sc5Image.getPalette(), PaletteType.GRB332))
+    (sc10Image as ScreenPaletted).setPalette(PaletteMSX.Factory.from(sc5Image.getPalette(), PaletteType.GRB332))
 
-    val fileOut = File(args[scaIdx])
+    val fileOut = File(args[sc10Idx])
     println("### Saving file ${fileOut.name}")
-    scaImage.saveTo(fileOut)
+    sc10Image.saveTo(fileOut)
 }
 
 // ca <fileIn.SCC> <fileOut.SCA> [lines]
 fun cmdCA_TransformSC12toSC10(args: Array<String>) {
     val cmdIdx = 0
     val sc12Idx = 1
-    val scaIdx = 2
+    val sc10Idx = 2
     val linesIdx = 3
     val cmd = args[cmdIdx].lowercase()
 
-    if (args.size < 3 || args.size > 4) {
+    if (args.size !in 3..4) {
         throw ArgumentException(cmd)
     }
     val lines = if (args.size == 4) checkNumericArg(args[linesIdx]) else 212
     if (lines !in 0..212) {
         throw ArgumentOutOfRangeException(lines, cmd)
     }
-    val sc12 = ScreenBitmapImpl.from(getFile(args[sc12Idx]))
-    val sca = ScreenBitmapImpl.SC10()
-    if (sc12 !is ScreenBitmapImpl.SC12) {
+    val sc12Image = ScreenBitmapImpl.from(getFile(args[sc12Idx]))
+    val sc10Image = ScreenBitmapImpl.SC10()
+    if (sc12Image !is ScreenBitmapImpl.SC12) {
         throw ImgWizardException("Input file might not be an SC12 file", cmd)
     }
 
-    for (y in 0 until lines) {
-        for (x in 0..sc12.width) {
-            TODO()  //TODO
-        }
+    val size = sc12Image.width / sc12Image.pixelType.pixelsPerByte * lines
+    var posIn = 0
+    var posOut = 0
+    while (posIn <= size) {
+        val orig = sc12Image.vram[posIn++]
+        sc10Image.vram[posOut++] = orig.and(0b11110111.toByte())
     }
+    (sc10Image as ScreenPaletted).setPalette(PaletteMSX.Factory.from(PaletteMSX.defaultMSX1, PaletteType.GRB332))
 
-    val fileOut = File(args[scaIdx])
-    sca.saveTo(fileOut)
+    val fileOut = File(args[sc10Idx])
+    println("### Saving file ${fileOut.name}")
+    sc10Image.saveTo(fileOut)
 }
 
 // v <file.IM?>
