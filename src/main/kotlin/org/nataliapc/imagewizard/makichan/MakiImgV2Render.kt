@@ -11,13 +11,12 @@ class MakiImgV2Render
     fun render(imgIn: MakiImgV2): BufferedImage
     {
         val imagePixelWidth = imgIn.imagePixelWidth()
-        val outputBuffer = IntArray(imgIn.imagePixelWidth() * imgIn.imagePixelHeight()) { 0 }
+        val outputBuffer = IntArray(imgIn.imagePixelWidth() * imgIn.imagePixelHeight() / 4) { 0 }
         val bitCountA = BitCount(ByteArrayInputStream(imgIn.flagA))
         val flagBStream = DataByteArrayInputStream(imgIn.flagB)
         val colorIndex = DataByteArrayInputStream(imgIn.colorIndex)
         val actionBuffer = ActionBuffer(imgIn.paddedImageByteWidth() / 4) { 0 }
         var action = 0    //Initialise the action buffer to all zeroes
-        var color = 0
         val backOffset = arrayOf(
             0, -1, -2, -4,
             -imagePixelWidth, -imagePixelWidth-1,
@@ -38,7 +37,7 @@ class MakiImgV2Render
                     actionBuffer.xor(flagBStream.readUnsignedByte())
                 }
                 //Read the next action buffer byte (the one you possibly just XORred).
-                action = actionBuffer.getNext()
+                action = actionBuffer.next()
 
                 //For the top nibble of the action byte:
                 //  If the nibble = 0, read the next 16-bit value from the "color index" stream, and output that.
@@ -48,7 +47,7 @@ class MakiImgV2Render
                     val actionNibble = if (i == 1) { action.shr(4).and(0x0f) } else { action.and(0x0f) }
 
 println("pos: $pos | pixel: ${pos%imagePixelWidth},${pos/imagePixelWidth} <- action(0x${Integer.toHexString(action).padStart(2,'0')}): $actionNibble -> ${backOffset[actionNibble]}")
-                    color = if (actionNibble == 0) {
+                    val color = if (actionNibble == 0) {
                         try {
                             val colorRead = if (colorIndex.available() > 0 ) {
                                 val temp = colorIndex.readUnsignedShortLE()         //TODO es LE o BE ????
@@ -65,11 +64,9 @@ println("color: ${Integer.toHexString(temp)}")
                     } else {
 println("$pos ${backOffset[actionNibble]}")
                         val backPos = pos + backOffset[actionNibble]
-                        try {
-                            outputBuffer[backPos]
-                        } catch (e:Exception) {
-                            0
-                        }
+try {
+                        outputBuffer[backPos]
+} catch (e:Exception) { 0 }
                     }
                     outputBuffer[pos++] = color
                 }
@@ -77,16 +74,34 @@ println("$pos ${backOffset[actionNibble]}")
                 //Repeat these steps until the output buffer is full, or one of the input flag streams runs out.
                 //  If the "color index" stream runs out, try using zeroes for any extra color indexes until the output buffer is full.
 println("bitCountA available: ${bitCountA.available()}")
-            } while (pos != outputBuffer.size && (bitCountA.available() != 0 || flagBStream.available() != 0))
+            } while (pos != outputBuffer.size && flagBStream.available() != 0)
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+
+        val palette = IntArray(imgIn.header.paletteRaw.size / 3)
+        for (index in palette.indices) {
+            palette[index] =
+                imgIn.header.paletteRaw[index*3+0].toUByte().toInt().shl(8) or  //G
+                imgIn.header.paletteRaw[index*3+1].toUByte().toInt().shl(16) or //R
+                imgIn.header.paletteRaw[index*3+2].toUByte().toInt()          //B
+println(Integer.toHexString(palette[index]))
+        }
+
+        val pixelBuffer = IntArray(imgIn.imagePixelWidth() * imgIn.imagePixelHeight())
+        pos = 0
+        outputBuffer.forEach {
+            pixelBuffer[pos++] = palette[it.shr(12).and(0x0f)]
+            pixelBuffer[pos++] = palette[it.shr(8).and(0x0f)]
+            pixelBuffer[pos++] = palette[it.shr(4).and(0x0f)]
+            pixelBuffer[pos++] = palette[it.shr(0).and(0x0f)]
         }
 
         val imgOut = BufferedImage(imgIn.imagePixelWidth(), imgIn.imagePixelHeight(), BufferedImage.TYPE_INT_RGB)
 println("size: ${imgOut.width} x ${imgOut.height}")
 println("outputSize: ${outputBuffer.size}")
 //outputBuffer.addAll(IntArray(imgOut.width*imgOut.height - outputBuffer.size) { 0 }.toList())
-        imgOut.setRGB(0, 0, imgOut.width, imgOut.height, outputBuffer, 0, imgOut.width)
+        imgOut.setRGB(0, 0, imgOut.width, imgOut.height, pixelBuffer, 0, imgOut.width)
         return imgOut
     }
 
@@ -133,7 +148,7 @@ print("flagA ON -> ${Integer.toBinaryString(buffer[pos])} -> ")
 println(Integer.toBinaryString(buffer[pos]))
         }
 
-        fun getNext(): Int {
+        fun next(): Int {
             val result = buffer[pos++].and(0xff)
             //While working, loop back to the buffer's beginning when you reach its end.
             if (pos == buffer.size) pos = 0
