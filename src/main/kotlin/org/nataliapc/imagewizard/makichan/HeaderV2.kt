@@ -3,8 +3,10 @@ package org.nataliapc.imagewizard.makichan
 import org.nataliapc.imagewizard.makichan.enums.ComputerModelCode
 import org.nataliapc.imagewizard.makichan.enums.ModelDependentFlag
 import org.nataliapc.imagewizard.makichan.enums.ScreenMode
+import org.nataliapc.utils.DataByteArrayInputStream
 import org.nataliapc.utils.readUnsignedIntLE
 import org.nataliapc.utils.readUnsignedShortLE
+import java.io.BufferedInputStream
 import java.io.DataInputStream
 import java.io.InputStream
 import java.nio.charset.Charset
@@ -32,8 +34,8 @@ class HeaderV2 private constructor()
     companion object {
         fun from(inputStream: InputStream): HeaderV2
         {
+
             val stream = DataInputStream(inputStream)
-            val startAvailable = stream.available()
             val header = HeaderV2()
 
             //0    8    Signature "MAKI02  " with two spaces at the end
@@ -49,13 +51,14 @@ class HeaderV2 private constructor()
                 tmpString.add(value.toByte())
             }
             header.metadata = String(tmpString.toByteArray(), Charset.forName("Shift_JIS"))
+println("Metadata: ${header.metadata}")
 
             //0    1    Start of header, always 00
             stream.skip(1)
             //1    1    Computer model code
-            header.computerModelCode = ComputerModelCode.byValue(stream.read())
+            header.computerModelCode = ComputerModelCode.byValue(stream.readUnsignedByte())
             //2    1    Model-dependent flags
-            header.modelDependentFlag = ModelDependentFlag.byValue(stream.read())
+            header.modelDependentFlag = ModelDependentFlag.byValue(stream.readUnsignedByte())
             //3    1    Screen mode
             header.screenMode = ScreenMode.byValue(stream.read())
             //4    2    X coordinate for image's left edge
@@ -77,8 +80,8 @@ class HeaderV2 private constructor()
             //28   4    Size of "color index" stream, in bytes
             header.sizeColorIndex = stream.readUnsignedIntLE()
             //32   ..   Palette: up to 256 byte triplets, order GRB
-            val currentOffset = startAvailable - stream.available()
-            header.paletteRaw = stream.readNBytes(((header.offsetFlagA - currentOffset) * 3).toInt())
+            val paletteSize = header.modelDependentFlag.pixelType.colors * 3
+            header.paletteRaw = stream.readNBytes(paletteSize)
 
             return header
         }
