@@ -33,6 +33,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           java-version: 11
+          distribution: 'adopt'
           cache: gradle
 
       - name: Cache Gradle packages
@@ -47,7 +48,9 @@ jobs:
 
       # Run Tests Build
       - name: Run gradle tests
-        run: ./gradlew test
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: test
 
       # Run Build Project
       - name: Build gradle project
@@ -63,6 +66,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.date_today }} - ${{ env.main_name }} - ${{ env.repository_name }} - JAR generated
-          files: |
-            LICENSE.txt
-            build/libs/*.jar
+          path: build/libs/*.jar
