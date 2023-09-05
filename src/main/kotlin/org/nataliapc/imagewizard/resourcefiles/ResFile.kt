@@ -7,4 +7,5 @@ interface ResFile
     fun getReource(index: Int): ResElement
     fun build(verbose: Boolean = false): ByteArray
     fun generateInclude(): String
+    fun printInfo()
 }

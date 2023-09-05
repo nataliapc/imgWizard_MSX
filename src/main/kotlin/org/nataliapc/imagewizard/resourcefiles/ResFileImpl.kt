@@ -2,9 +2,9 @@ package org.nataliapc.imagewizard.resourcefiles
 
 import org.nataliapc.imagewizard.compressor.Compressor
 import org.nataliapc.imagewizard.compressor.Raw
-import org.nataliapc.utils.DataByteArrayOutputStream
-import org.nataliapc.utils.writeIntLE
-import org.nataliapc.utils.writeShortLE
+import org.nataliapc.utils.*
+import java.io.DataInputStream
+import java.io.InputStream
 import java.util.zip.CRC32
 
 
@@ -16,7 +16,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
         val compressor: Compressor,
         val rawSize: Int,
         val compressedSize: Int,
-        val crc32c: Long)
+        val crc32: Long)
     {
         companion object {
             fun sizeOf() = IndexResource(
@@ -26,6 +26,17 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
                 0,
                 0,
                 0).build().size
+            fun from(inputStream: InputStream): IndexResource {
+                val stream = DataInputStream(inputStream)
+                return IndexResource(
+                    stream.readNBytes(13).copyOf(12).toCharString(),
+                    stream.readUnsignedIntLE(),
+                    Compressor.Types.byId(stream.read()),
+                    stream.readUnsignedShortLE(),
+                    stream.readUnsignedShortLE(),
+                    stream.readUnsignedIntLE()
+                )
+            }
         }
         fun build(): ByteArray
         {
@@ -35,9 +46,20 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
                 it.writeByte(compressor.id)
                 it.writeShortLE(rawSize)
                 it.writeShortLE(compressedSize)
-                it.writeIntLE(crc32c)
+                it.writeIntLE(crc32)
                 it.toByteArray()
             }
+        }
+        fun printInfo(index: Int = -1) {
+            println("### Resource Item ${if (index<0) "" else "#$index"}")
+            print(
+                "\tFilename:     $filename\n" +
+                "\tAbs.Position: $absolutePosition\n" +
+                "\tCompressor:   ${compressor::class.java.simpleName}\n" +
+                "\tRaw size:     $rawSize\n" +
+                "\tComp. size:   $compressedSize\n" +
+                "\tCRC32:        ${"%08X".format(crc32)}\n"
+            )
         }
     }
 
@@ -47,6 +69,29 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
     companion object
     {
         private const val magicHeader = "RESX"
+
+        fun from(inputStream: InputStream): ResFile {
+            val stream = DataInputStream(inputStream)
+            val resX = ResFileImpl()
+
+            val header = stream.readNBytes(magicHeader.length).toCharString()
+            if (!header.startsWith(magicHeader.subSequence(0, 3))) {
+                throw java.lang.RuntimeException("Bad magic header reading RES (${header})")
+            }
+
+            val indexSize = stream.readUnsignedShortLE()
+            for (i in 0 until indexSize) {
+                resX.resIndex.add(IndexResource.from(stream))
+            }
+
+            resX.resIndex.forEach {
+                resX.resCollection.add(
+                    ResElementByteArray(it.filename, stream.readNBytes(it.compressedSize))
+                )
+            }
+
+            return resX
+        }
     }
 
     override fun addResource(item: ResElement)
@@ -119,4 +164,11 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
 
         return out
     }
+
+    override fun printInfo() {
+        resIndex.forEachIndexed { index, it ->
+            it.printInfo(index + 1)
+        }
+    }
+
 }
