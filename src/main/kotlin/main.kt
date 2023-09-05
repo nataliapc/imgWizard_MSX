@@ -7,6 +7,8 @@ import org.nataliapc.imagewizard.image.ImgXFactory
 import org.nataliapc.imagewizard.image.ImgXRepository
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.*
+import org.nataliapc.imagewizard.makichan.MakiImgV2Render
+import org.nataliapc.imagewizard.makichan.MakiImgV2Repository
 import org.nataliapc.imagewizard.resourcefiles.ResElementFile
 import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
 import org.nataliapc.imagewizard.screens.PaletteMSX
@@ -322,9 +324,17 @@ fun cmdV_ViewImageIMx(args: Array<String>) {
     val fileIn = getFile(args[fileIdx], "Opening")
     var infoChunk: InfoChunk? = null
     var pixelAspectRatio = PixelAspect.Ratio11
+    val fileTypeDetected = fileIn.inputStream().use {
+        val magic = String(it.readNBytes(256))
+        FileExt.byMagicHeader(magic)
+    }
 
     val origImg: BufferedImage = if (canReadImageExtension(fileIn.extension)) {
         ImageIO.read(FileInputStream(fileIn))
+    } else if (fileTypeDetected == FileExt.MAG || fileTypeDetected == FileExt.MAX) {
+        val magv2 = MakiImgV2Repository().from(fileIn)
+        pixelAspectRatio = magv2.getPixelAspectRatio()
+        MakiImgV2Render().render(magv2)
     } else {
         val imgx = ImgXRepository().from(fileIn)
         infoChunk = imgx.getInfoChunk()

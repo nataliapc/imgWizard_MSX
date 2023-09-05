@@ -6,6 +6,8 @@ enum class FileExt(val fileExtension: String, val imxExt: String, val magicHeade
     PNG("PNG", "", ""),
     GIF("GIF", "", ""),
     JPG("JPG", "", ""),
+    MAX("MAX", "", "MAKI02  "),
+    MAG("MAG", "", "MAKI02  "),
     SC5("SC5", "IM5", "IMG5"),
     SC6("SC6", "IM6", "IMG6"),
     SC7("SC7", "IM7", "IMG7"),
@@ -25,6 +27,14 @@ enum class FileExt(val fileExtension: String, val imxExt: String, val magicHeade
         fun byFileExtension(value: String): FileExt {
             values().forEach {
                 if (it.fileExtension == value) {
+                    return it
+                }
+            }
+            return Unknown
+        }
+        fun byMagicHeader(magic: String): FileExt {
+            values().forEach {
+                if (it.magicHeader.isNotEmpty() && magic.startsWith(it.magicHeader)) {
                     return it
                 }
             }
