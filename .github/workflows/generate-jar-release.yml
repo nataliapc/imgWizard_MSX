@@ -46,7 +46,7 @@ jobs:
         run: chmod +x ./gradlew
 
       # Run Tests Build
-      - uses: gradle/gradle-build-action@v3
+      - uses: gradle/gradle-build-action@v2
         with:
           arguments: test
 #      - name: Run gradle tests
