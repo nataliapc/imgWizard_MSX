@@ -3,10 +3,9 @@ package org.nataliapc.imagewizard.makichan
 import org.nataliapc.imagewizard.makichan.enums.ComputerModelCode
 import org.nataliapc.imagewizard.makichan.enums.ModelDependentFlag
 import org.nataliapc.imagewizard.makichan.enums.ScreenMode
-import org.nataliapc.utils.DataByteArrayInputStream
+import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.utils.readUnsignedIntLE
 import org.nataliapc.utils.readUnsignedShortLE
-import java.io.BufferedInputStream
 import java.io.DataInputStream
 import java.io.InputStream
 import java.nio.charset.Charset
@@ -80,7 +79,11 @@ println("Metadata: ${header.metadata}")
             //28   4    Size of "color index" stream, in bytes
             header.sizeColorIndex = stream.readUnsignedIntLE()
             //32   ..   Palette: up to 256 byte triplets, order GRB
-            val paletteSize = header.modelDependentFlag.pixelType.colors * 3
+            val paletteSize = when(header.modelDependentFlag.pixelType) {
+                PixelType.BP2, PixelType.BP4 -> header.modelDependentFlag.pixelType.colors
+                PixelType.BYJK, PixelType.BYJKP -> 16
+                else -> { throw RuntimeException("Unknown palette size") }
+            } * 3
             header.paletteRaw = stream.readNBytes(paletteSize)
 
             return header

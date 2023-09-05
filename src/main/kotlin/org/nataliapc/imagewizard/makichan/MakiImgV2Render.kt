@@ -1,9 +1,10 @@
 package org.nataliapc.imagewizard.makichan
 
+import org.nataliapc.imagewizard.color.ColorYJK
 import org.nataliapc.imagewizard.makichan.enums.ComputerModelCode
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.enums.PixelType
-import org.nataliapc.utils.*
+import org.nataliapc.utils.DataByteArrayInputStream
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.InputStream
@@ -51,17 +52,15 @@ class MakiImgV2Render
                 for (i in 0..1) {
                     val actionNibble = if (i == 0) { action.shr(4).and(0x0f) } else { action.and(0x0f) }
 
-println("pos: $pos | pixel: ${pos%imagePixelWidth},${pos/imagePixelWidth} <- action(0x${Integer.toHexString(action).padStart(2,'0')}): $actionNibble -> ${backOffset[actionNibble]}")
+//println("pos: $pos | pixel: ${pos%imagePixelWidth},${pos/imagePixelWidth} <- action(0x${Integer.toHexString(action).padStart(2,'0')}): $actionNibble -> ${backOffset[actionNibble]}")
                     val color = if (actionNibble == 0) {
-                        if (colorIndex.available() > 0 ) {
-                            val temp = colorIndex.readUnsignedShort()
-                            temp
-                        } else {
+                        try {
+                            colorIndex.readUnsignedShort()
+                        } catch(e: Exception) {
                             0
                         }
                     } else {
-// 0x4366
-println("$pos ${backOffset[actionNibble]}")
+//println("$pos ${backOffset[actionNibble]}")
                         val backPos = pos + backOffset[actionNibble]
                         outputBuffer[backPos]
                     }
@@ -70,7 +69,7 @@ println("$pos ${backOffset[actionNibble]}")
 
                 //Repeat these steps until the output buffer is full, or one of the input flag streams runs out.
                 //  If the "color index" stream runs out, try using zeroes for any extra color indexes until the output buffer is full.
-println("bitCountA available: ${bitCountA.available()}")
+//println("bitCountA available: ${bitCountA.available()}")
             } while (pos != outputBuffer.size && flagBStream.available() != 0)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -96,33 +95,66 @@ println("bitCountA available: ${bitCountA.available()}")
                     )
                 else -> { 0 }
             }
-println(Integer.toHexString(palette[index]))
+//println(Integer.toHexString(palette[index]))
         }
 
         //Convert Integer output to RGB24 pixels
         val pixelBuffer = ArrayList<Int>()
         val pixelType = imgIn.header.modelDependentFlag.pixelType
-        outputBuffer.forEach {
-            when (pixelType) {
-                PixelType.BP4 -> {
-                    pixelBuffer.add(palette[it.shr(12).and(0x0f)])
-                    pixelBuffer.add(palette[it.shr(8).and(0x0f)])
-                    pixelBuffer.add(palette[it.shr(4).and(0x0f)])
-                    pixelBuffer.add(palette[it.shr(0).and(0x0f)])
+        if (pixelType != PixelType.BYJK && pixelType != PixelType.BYJKP) {
+            outputBuffer.forEach {
+                when (pixelType) {
+                    PixelType.BP4 -> {
+                        pixelBuffer.add(palette[it.shr(12).and(0x0f)])
+                        pixelBuffer.add(palette[it.shr(8).and(0x0f)])
+                        pixelBuffer.add(palette[it.shr(4).and(0x0f)])
+                        pixelBuffer.add(palette[it.shr(0).and(0x0f)])
+                    }
+                    PixelType.BD8 -> {
+                        pixelBuffer.add(palette[it.shr(8).and(0xff)])
+                        pixelBuffer.add(palette[it.shr(0).and(0xff)])
+                    }
+                    else -> {
+                        throw RuntimeException("Unexpected palette: ${pixelType.name}")
+                    }
                 }
-                PixelType.BD8 -> {
-                    pixelBuffer.add(PaletteType.GRB332.toRGB24(it.shr(8).and(0xff)))
-                    pixelBuffer.add(PaletteType.GRB332.toRGB24(it.shr(0).and(0xff)))
-                }
-                else -> {
-                    throw RuntimeException("Unexpected palette: ${pixelType.name}")
+            }
+        } else {
+            imgIn.header.rightX = (imgIn.header.rightX + 1) / 2 -1
+            outputBuffer.asList().chunked(2).forEach { bytes ->
+                // K = low 3 bits of first byte + 8 * (low 3 bits of second byte)
+                val k = bytes[0].and(0x07).or(bytes[0].and(0x0700).shr(8))
+                // J = low 3 bits of third byte + 8 * (low 3 bits of fourth byte)
+                val j = bytes[1].and(0x07).or(bytes[1].and(0x0700).shr(8))
+                // Y0 = (high 5 bits of first byte) / 8
+                val y0 = bytes[0].shr(11).and(0x1f)
+                // Y1 = (high 5 bits of second byte) / 8
+                val y1 = bytes[0].shr(3).and(0x1f)
+                // Y2 = (high 5 bits of third byte) / 8
+                val y2 = bytes[1].shr(11).and(0x1f)
+                // Y3 = (high 5 bits of fourth byte) / 8
+                val y3 = bytes[1].shr(3).and(0x1f)
+                // For each Yn value:
+                // If the model flag is $24 or $34 and the lowest bit of Yn is set:
+                if (pixelType == PixelType.BYJKP) {
+                    // output the RGB values of palette index (Yn / 2)
+                    pixelBuffer.add(if (y0.shr(1) == 0) { ColorYJK.getRGB24fromYJK(y0, j, k) } else { palette[y0.shr(1)] })
+                    pixelBuffer.add(if (y1.shr(1) == 0) { ColorYJK.getRGB24fromYJK(y1, j, k) } else { palette[y1.shr(1)] })
+                    pixelBuffer.add(if (y2.shr(1) == 0) { ColorYJK.getRGB24fromYJK(y2, j, k) } else { palette[y2.shr(1)] })
+                    pixelBuffer.add(if (y3.shr(1) == 0) { ColorYJK.getRGB24fromYJK(y3, j, k) } else { palette[y3.shr(1)] })
+                } else {
+                    // Else output these RGB values:
+                    pixelBuffer.add(ColorYJK.getRGB24fromYJK(y0, j, k))
+                    pixelBuffer.add(ColorYJK.getRGB24fromYJK(y1, j, k))
+                    pixelBuffer.add(ColorYJK.getRGB24fromYJK(y2, j, k))
+                    pixelBuffer.add(ColorYJK.getRGB24fromYJK(y3, j, k))
                 }
             }
         }
 
         val imgOut = BufferedImage(imgIn.imagePixelWidth(), imgIn.imagePixelHeight(), BufferedImage.TYPE_INT_RGB)
-println("size: ${imgOut.width} x ${imgOut.height}")
-println("outputSize: ${outputBuffer.size}")
+//println("size: ${imgOut.width} x ${imgOut.height}")
+//println("outputSize: ${outputBuffer.size}")
 //outputBuffer.addAll(IntArray(imgOut.width*imgOut.height - outputBuffer.size) { 0 }.toList())
         imgOut.setRGB(0, 0, imgOut.width, imgOut.height, pixelBuffer.toIntArray(), 0, imgOut.width)
         return imgOut
@@ -164,9 +196,9 @@ println("outputSize: ${outputBuffer.size}")
         }
 
         fun xor(value: Int) {
-print("flagA ON -> ${Integer.toBinaryString(buffer[pos])} -> ")
+//print("flagA ON -> ${Integer.toBinaryString(buffer[pos])} -> ")
             buffer[pos] = buffer[pos].xor(value).and(0xff)
-println(Integer.toBinaryString(buffer[pos]))
+//println(Integer.toBinaryString(buffer[pos]))
         }
 
         fun next(): Int {
