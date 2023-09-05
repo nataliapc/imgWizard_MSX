@@ -11,6 +11,7 @@ import org.nataliapc.imagewizard.makichan.MakiImgV2Render
 import org.nataliapc.imagewizard.makichan.MakiImgV2Repository
 import org.nataliapc.imagewizard.resourcefiles.ResElementFile
 import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
+import org.nataliapc.imagewizard.resourcefiles.ResRepository
 import org.nataliapc.imagewizard.screens.PaletteMSX
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
@@ -75,6 +76,13 @@ class ArgumentOutOfRangeException(value: Int, cmd: String): ImgWizardException("
 private fun cmdL_ListContent(args: Array<String>)
 {
     val fileIn = getFile(args[1])
+
+    if (fileIn.extension == "res") {
+        ResRepository().from(fileIn)
+            .printInfo()
+        return
+    }
+
     ImgXRepository().from(fileIn)
         .printInfo()
 }
@@ -366,7 +374,7 @@ fun cmdRES_CreateResourceFile(args: Array<String>)
     }
 
     println("### Saving Resources file ${fileOut.name}")
-    fileOut.writeBytes(resFile.build(true))
+    ResRepository().save(resFile, fileOut)
     println("### Saving Include file ${fileInc.name}")
     fileInc.writeText(resFile.generateInclude())
 }
