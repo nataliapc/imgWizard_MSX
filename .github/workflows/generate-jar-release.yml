@@ -47,11 +47,10 @@ jobs:
         run: chmod +x ./gradlew
 
       # Run Tests Build
-      - uses: gradle/gradle-build-action@v2
+      - name: Run gradle tests
+        uses: gradle/gradle-build-action@v2
         with:
           arguments: test
-#      - name: Run gradle tests
-#        run: ./gradlew test
 
       # Run Build Project
       - name: Build gradle project
@@ -67,6 +66,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ env.date_today }} - ${{ env.main_name }} - ${{ env.repository_name }} - JAR generated
-          path: |
-            LICENSE.txt
-            build/libs/*.jar
+          path: build/libs/*.jar
