@@ -2,7 +2,7 @@ package org.nataliapc.imagewizard.screens.imagewrapper
 
 import org.nataliapc.imagewizard.image.chunks.Chunk
 import org.nataliapc.imagewizard.image.chunks.impl.*
-import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk.Command
+import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk.CommandType
 import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk.LogicalOp
 import org.nataliapc.imagewizard.screens.enums.Chipset
 import org.nataliapc.imagewizard.screens.enums.PixelType
@@ -186,7 +186,7 @@ class ImageRender(
     }
 
     fun clear(image: BufferedImage, color: Int) {
-        fill(image, V9990CmdChunk(0,0, 0,0, image.width,image.height, 0, LogicalOp.IMP, 0xffff, color, 0, Command.LMMV))
+        fill(image, V9990CmdChunk.CommandData(0,0, 0,0, image.width,image.height, 0, LogicalOp.IMP, 0xffff, color, 0, CommandType.LMMV))
     }
 
     fun screenBitmapChunk(image: BufferedImage, chunk: ScreenBitmapChunk, dataPointer: Int): Int {
@@ -225,62 +225,67 @@ class ImageRender(
 
     fun commandV9990(image: BufferedImage, chunk: V9990CmdChunk)
     {
-        when (chunk.cmd) {
-            Command.Stop -> {}
-            Command.LMMV -> fill(image, chunk)
-            Command.LMMM -> copy(image, chunk)
-            Command.LMMC -> startSendData(chunk)
-            Command.BMXL -> linToRec(image, (chunk.sy shl 8) or chunk.sx, chunk.dx, chunk.dy, chunk.nx, chunk.ny)
-            Command.BMLX -> recToLin(image, chunk.sx, chunk.sy, chunk.nx, chunk.ny, (chunk.dy shl 8) or chunk.dx)
-            Command.BMLL -> linToLin(image, (chunk.sy shl 8) or chunk.sx, (chunk.dy shl 8) or chunk.dx, (chunk.ny shl 8) or chunk.nx)
-            Command.CMMC -> TODO("CMMC Not implemented yet")
-            Command.CMMM -> TODO("CMMM Not implemented yet")
-            Command.Line -> drawLine(image, chunk)
-            Command.Pset -> pset(image, chunk)
-            Command.Point -> TODO("Point command Not implemented")
-            Command.Search -> TODO("Search Not implemented yet")
-            Command.Advance -> TODO("Advance Not implemented yet")
-            else -> throw RuntimeException("Unknown V9990 Command type (${chunk.cmd.value})")
+        for (i in 0 until chunk.numCommands) {
+            chunk.getCommand(i).also {
+                when (it.cmd) {
+                    CommandType.Stop -> {}
+                    CommandType.LMMV -> fill(image, it)
+                    CommandType.LMMM -> copy(image, it)
+                    CommandType.LMMC -> startSendData(it)
+                    CommandType.BMXL -> linToRec(image, (it.sy shl 8) or it.sx, it.dx, it.dy, it.nx, it.ny)
+                    CommandType.BMLX -> recToLin(image, it.sx, it.sy, it.nx, it.ny, (it.dy shl 8) or it.dx)
+                    CommandType.BMLL -> linToLin(image, (it.sy shl 8) or it.sx, (it.dy shl 8) or it.dx, (it.ny shl 8) or it.nx)
+                    CommandType.CMMC -> TODO("CMMC Not implemented yet")
+                    CommandType.CMMM -> TODO("CMMM Not implemented yet")
+                    CommandType.Line -> drawLine(image, it)
+                    CommandType.Pset -> pset(image, it)
+                    CommandType.Point -> TODO("Point command Not implemented")
+                    CommandType.Search -> TODO("Search Not implemented yet")
+                    CommandType.Advance -> TODO("Advance Not implemented yet")
+                    else -> throw RuntimeException("Unknown V9990 Command type (${it.cmd.value})")
+                }
+            }
         }
     }
 
-    private fun drawLine(image: BufferedImage, chunk: V9990CmdChunk)
+    private fun drawLine(image: BufferedImage, cmd: V9990CmdChunk.CommandData)
     {
-        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
-        val sx = chunk.dx
-        val sy = chunk.dy
-        val mj = chunk.nx
-        val mi = chunk.ny
-        val diy = ((chunk.arg.toInt() shr 3) and 1) * -2 + 1
-        val dix = ((chunk.arg.toInt() shr 2) and 1) * -2 + 1
+        if (cmd.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${cmd.log.value})") }
+        val sx = cmd.dx
+        val sy = cmd.dy
+        val mj = cmd.nx
+        val mi = cmd.ny
+        val diy = ((cmd.arg.toInt() shr 3) and 1) * -2 + 1
+        val dix = ((cmd.arg.toInt() shr 2) and 1) * -2 + 1
         val dx = sx + mj * dix
         val dy = sy + mi * diy
 
         val g = image.createGraphics() as Graphics2D
-        g.color = Color(paletteType.toRGB24(chunk.foreColor and chunk.mask))
+        g.color = Color(paletteType.toRGB24(cmd.foreColor and cmd.mask))
         g.drawLine(sx, sy, dx, dy)
     }
 
-    private fun fill(image: BufferedImage, chunk: V9990CmdChunk)
+    private fun fill(image: BufferedImage, cmd: V9990CmdChunk.CommandData)
     {
-        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
+        if (cmd.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${cmd.log.value})") }
         val g = image.createGraphics() as Graphics2D
-        g.color = Color(paletteType.toRGB24(chunk.foreColor and chunk.mask))
-        g.fillRect(chunk.dx, chunk.dy, chunk.nx, chunk.ny)
+        g.color = Color(paletteType.toRGB24(cmd.foreColor and cmd.mask))
+        g.fillRect(cmd.dx, cmd.dy, cmd.nx, cmd.ny)
     }
 
-    private fun copy(image: BufferedImage, chunk: V9990CmdChunk)
+    private fun copy(image: BufferedImage, cmd: V9990CmdChunk.CommandData)
     {
-        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
-        if (chunk.mask != 0xffff) { TODO("mask not implemented ($chunk.mask)") }
+        if (cmd.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${cmd.log.value})") }
+        if (cmd.mask != 0xffff) { TODO("mask not implemented ($cmd.mask)") }
 
         val g = image.createGraphics() as Graphics2D
-        g.copyArea(chunk.sx, chunk.sy, chunk.nx, chunk.ny, chunk.dx-chunk.sx, chunk.dy-chunk.sy)
+        g.copyArea(cmd.sx, cmd.sy, cmd.nx, cmd.ny, cmd.dx-cmd.sx, cmd.dy-cmd.sy)
     }
 
-    private fun pset(image: BufferedImage, chunk: V9990CmdChunk) {
-        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
-        image.setRGB(chunk.dx, chunk.dy, paletteType.toRGB24(chunk.foreColor and chunk.mask))
+    private fun pset(image: BufferedImage, cmd: V9990CmdChunk.CommandData)
+    {
+        if (cmd.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${cmd.log.value})") }
+        image.setRGB(cmd.dx, cmd.dy, paletteType.toRGB24(cmd.foreColor and cmd.mask))
     }
 
     private fun linToRec(image: BufferedImage, address: Int, dx: Int, dy: Int, nx: Int, ny: Int) {
@@ -326,12 +331,12 @@ class ImageRender(
         }
     }
 
-    private fun startSendData(chunk: V9990CmdChunk)
+    private fun startSendData(cmd: V9990CmdChunk.CommandData)
     {
-        if (chunk.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${chunk.log.value})") }
+        if (cmd.log != LogicalOp.IMP) { TODO("LogicalOp not implemented (${cmd.log.value})") }
 
-        dataRect = Rectangle(chunk.dx, chunk.dy, chunk.nx, chunk.ny)
-        dataLogicalOp = chunk.log
+        dataRect = Rectangle(cmd.dx, cmd.dy, cmd.nx, cmd.ny)
+        dataLogicalOp = cmd.log
         dataOutput = DataByteArrayOutputStream()
     }
 

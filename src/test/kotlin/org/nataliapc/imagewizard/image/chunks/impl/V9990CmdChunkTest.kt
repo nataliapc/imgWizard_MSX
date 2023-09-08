@@ -13,14 +13,14 @@ internal class V9990CmdChunkTest {
     fun build_Ok()
     {
         val chunk = V9990CmdChunk(
-            1,2,3,4,5,6,7, LogicalOp.None,9,10,11, Command.Stop
+            1,2,3,4,5,6,7, LogicalOp.None,9,10,11, CommandType.Stop
         )
 
         val result = chunk.build()
 
         assertEquals(32, chunk.getId())
         assertArrayEquals(
-            byteArrayOf(32, 0,0, 21,0, 1,0, 2,0, 3,0, 4,0, 5,0, 6,0, 7, 0, 9,0, 10,0, 11,0, 0),
+            byteArrayOf(32, 1,0, 21,0, 1, 1,0, 2,0, 3,0, 4,0, 5,0, 6,0, 7, 0, 9,0, 10,0, 11,0, 0),
             result
         )
     }
@@ -28,9 +28,9 @@ internal class V9990CmdChunkTest {
     @Test
     fun createFrom_Ok() {
         val stream = DataByteArrayInputStream(byteArrayOf(
-            32, 21,0, 0,0, 1,0,2,0, 3,0,4,0, 5,0,6,0,
+            32, 1,0, 21,0, 1, 1,0,2,0, 3,0,4,0, 5,0,6,0,
             7, LogicalOp.IMP.value.toByte(), 9,0, 10,0, 11,0,
-            Command.Stop.value.toByte()
+            CommandType.Stop.value.toByte()
         ))
 
         val result = V9990CmdChunk.from(stream)
@@ -41,7 +41,7 @@ internal class V9990CmdChunkTest {
     @Test
     fun printInfo_Ok() {
         val chunk = V9990CmdChunk(
-            1,2,3,4,5,6,7, LogicalOp.None,9,10,11, Command.Stop
+            1,2,3,4,5,6,7, LogicalOp.None,9,10,11, CommandType.Stop
         )
 
         chunk.printInfo()
