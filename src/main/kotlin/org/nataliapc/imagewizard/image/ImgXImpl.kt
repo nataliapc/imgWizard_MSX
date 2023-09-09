@@ -5,6 +5,7 @@ import org.nataliapc.imagewizard.image.chunks.ChunkData
 import org.nataliapc.imagewizard.image.chunks.ChunkFactory
 import org.nataliapc.imagewizard.image.chunks.ChunkPalette
 import org.nataliapc.imagewizard.image.chunks.impl.InfoChunk
+import org.nataliapc.imagewizard.image.chunks.impl.V9990CmdChunk
 import org.nataliapc.imagewizard.screens.enums.PixelType
 import org.nataliapc.imagewizard.screens.enums.PaletteType
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
@@ -77,7 +78,7 @@ internal class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
     }
 
     override fun add(chunk: Chunk): ImgX {
-        chunks.add(chunk)
+        addOrCompactNewChunk(chunk)
         infoChunk?.update(this)
         return this
     }
@@ -196,4 +197,26 @@ internal class ImgXImpl(withInfoChunk: Boolean = true): ImgX {
         val percent = "%.2f".format(compressedDataSize * 100.0 / uncompressedDataSize)
         println("Total data size: $uncompressedDataSize bytes. Total compressed size: $compressedDataSize [$percent%]")
     }
+
+    // ==============================================================
+    // Private methods
+
+    private fun addOrCompactNewChunk(chunkNew: Chunk) {
+        if (chunkCount() > 0) {
+            val lastChunk = chunks.last()
+            if (chunkNew is V9990CmdChunk && lastChunk is V9990CmdChunk) {
+                while (chunkNew.numCommands > 0) {
+                    if (lastChunk.addCommand(chunkNew.getCommand(0))) {
+                        chunkNew.removeAt(0)
+                    } else {
+                        chunks.add(chunkNew)
+                        return
+                    }
+                }
+                return
+            }
+        }
+        chunks.add(chunkNew)
+    }
+
 }

@@ -153,13 +153,18 @@ open class V9990CmdChunk() : ChunkAbstractImpl(32)
     }
 
     fun addCommand(cmd: CommandData): Boolean {
-        if (numCommands >= 185) return false
+        if (numCommands >= MAX_CMD_IN_CHUNK) return false
         commands.add(cmd)
         numCommands = commands.size
         return true
     }
 
-    fun getCommand(i: Int): CommandData = commands[i]
+    fun getCommand(index: Int): CommandData = commands[index]
+
+    fun removeAt(index: Int) {
+        commands.removeAt(index)
+        numCommands = commands.size
+    }
 
     override fun ensembleExtraHeader(): ByteArray {
         val out = DataByteArrayOutputStream()
