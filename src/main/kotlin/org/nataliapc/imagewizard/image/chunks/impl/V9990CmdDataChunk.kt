@@ -22,7 +22,7 @@ import java.lang.RuntimeException
         0x0003  2    Data length (1-2040)
         --extra header--
         0x0005  1    Compressor ID
-        0x0006  2    Uncompressed data length
+        0x0006  2    Uncompressed data length (max: 16Kb)
         ---data---
         0x0008 ...   Compressed data (1-2040 bytes length)
  */
@@ -50,6 +50,8 @@ class V9990CmdDataChunk private constructor() : ChunkAbstractImpl(33),
 
     companion object : ChunkCreateFrom
     {
+        const val MAX_UNCOMPRESSED_SIZE = 16 * 1024
+
         override fun from(stream: DataInputStream): V9990CmdDataChunk {
             val obj = V9990CmdDataChunk()
             obj.readChunk(stream)

@@ -12,6 +12,10 @@ interface Compressor
         const val MAX_SIZE_UNCOMPRESSED = 48 * 1024
     }
 
+    fun getName(): String {
+        return this::class.java.simpleName
+    }
+
     enum class Types(val instance: Compressor) {
         RAW(Raw()),
         RLE(Rle()),

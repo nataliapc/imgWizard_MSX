@@ -1,16 +1,16 @@
 package org.nataliapc.imagewizard.resourcefiles
 
 import org.nataliapc.imagewizard.compressor.Compressor
-import org.nataliapc.imagewizard.compressor.Raw
+import org.nataliapc.imagewizard.resourcefiles.interfaces.ResElement
 import org.nataliapc.utils.*
 import java.io.DataInputStream
 import java.io.InputStream
 import java.util.zip.CRC32
 
 
-class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
+class ResFileImpl() : ResFile
 {
-    private data class IndexResource(
+    data class IndexResource(
         val filename: String,
         val absolutePosition: Long,
         val compressor: Compressor,
@@ -29,7 +29,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
             fun from(inputStream: InputStream): IndexResource {
                 val stream = DataInputStream(inputStream)
                 return IndexResource(
-                    stream.readNBytes(13).copyOf(12).toCharString(),
+                    stream.readNBytes(13).copyOf(12).toCharString().trimEnd('\u0000'),
                     stream.readUnsignedIntLE(),
                     Compressor.Types.byId(stream.read()),
                     stream.readUnsignedShortLE(),
@@ -50,20 +50,32 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
                 it.toByteArray()
             }
         }
-        fun printInfo(index: Int = -1) {
-            println("### Resource Item ${if (index<0) "" else "#$index"}")
-            print(
-                "\tFilename:     $filename\n" +
-                "\tAbs.Position: $absolutePosition\n" +
-                "\tCompressor:   ${compressor::class.java.simpleName}\n" +
-                "\tRaw size:     $rawSize\n" +
-                "\tComp. size:   $compressedSize\n" +
-                "\tCRC32:        ${"%08X".format(crc32)}\n"
-            )
+        fun printInfo(index: Int = 1) {
+            println(" %3d | %-12s | %7d | %-10s | %8d | %8d | %02d%% | %08x".format(
+                index,
+                filename,
+                absolutePosition,
+                compressor.getName(),
+                rawSize,
+                compressedSize,
+                compressedSize * 100 / rawSize,
+                crc32
+            ))
         }
     }
 
+    /**
+     * A mutable list to store the resource elements for the resource file.
+     * This list contains the actual resource data, such as images, fonts, or other binary assets.
+     * The resources are stored in the order they appear in the resource file index.
+     */
     private var resCollection = mutableListOf<ResElement>()
+    /**
+     * A mutable list to store the index resources for the resource file.
+     * This list contains metadata about each resource in the file, such as the filename,
+     * absolute position, compressor type, raw size, compressed size, and CRC32 checksum.
+     * The index is used to quickly locate and retrieve individual resources from the file.
+     */
     private val resIndex = mutableListOf<IndexResource>()
 
     companion object
@@ -86,7 +98,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
 
             resX.resIndex.forEach {
                 resX.resCollection.add(
-                    ResElementByteArray(it.filename, stream.readNBytes(it.compressedSize))
+                    ResElementByteArray(it, stream.readNBytes(it.compressedSize))
                 )
             }
 
@@ -96,6 +108,7 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
 
     override fun addResource(item: ResElement)
     {
+        resCollection.removeIf { it.getName() == item.getName() }
         resCollection.add(item)
         resIndex.clear()
     }
@@ -119,24 +132,43 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
                 data.size()
 
         resCollection.forEach {
-            if (verbose) { print("    Compressing '${it.getName()}'") }
+            when (it) {
+                is ResElementByteArray -> {
+                    if (verbose) { println("      Keeping '${it.getName()}' [${it.getCompressor().getName()}]") }
 
-            val rawData = it.getContent()
-            val compressedData = compressor.compress(rawData)
-            val crc = CRC32()
-            crc.update(compressedData)
+                    resIndex.add(
+                        IndexResource(
+                            it.getName(),
+                            headerIndexRawSize + data.size() - 1,
+                            it.getCompressor(),
+                            it.getSize(),
+                            it.getCompressedSize(),
+                            it.getCRC()
+                        )
+                    )
+                    data.write(it.getContent())
+                }
+                is ResElementFile -> {
+                    if (verbose) { print("  Compressing '${it.getName()}' [${it.getCompressor().getName()}]") }
 
-            if (verbose) { println("\t${rawData.size} bytes -> ${compressedData.size} bytes") }
+                    val rawData = it.getContent()
+                    val compressedData = it.getCompressor().compress(rawData)
+                    val crc = CRC32()
+                    crc.update(compressedData)
 
-            resIndex.add(IndexResource(
-                it.getName(),
-                headerIndexRawSize + data.size() - 1,
-                compressor,
-                rawData.size,
-                compressedData.size,
-                crc.value
-            ))
-            data.write(compressedData)
+                    if (verbose) { println("\t${rawData.size} bytes -> ${compressedData.size} bytes") }
+
+                    resIndex.add(IndexResource(
+                        it.getName(),
+                        headerIndexRawSize + data.size() - 1,
+                        it.getCompressor(),
+                        rawData.size,
+                        compressedData.size,
+                        crc.value
+                    ))
+                    data.write(compressedData)
+                }
+            }
         }
 
         return out.use { stream ->
@@ -166,9 +198,18 @@ class ResFileImpl(val compressor: Compressor = Raw()) : ResFile
     }
 
     override fun printInfo() {
+        var totalRawSize = 0
+        var totalCompressedSize = 0
+        println(" ### | Filename     | Abs.Pos.| Compressor | Raw Size | Compress |  %  | CRC32")
+        println("-----+--------------+---------+------------+----------+----------+-----+----------")
         resIndex.forEachIndexed { index, it ->
             it.printInfo(index + 1)
+            totalRawSize += it.rawSize
+            totalCompressedSize += it.compressedSize
         }
+        println("Total data: ${totalRawSize/1024}Kb | "+
+                "Compressed: ${totalCompressedSize/1024}Kb "+
+                "(${totalCompressedSize * 100 / totalRawSize}%)")
     }
 
 }

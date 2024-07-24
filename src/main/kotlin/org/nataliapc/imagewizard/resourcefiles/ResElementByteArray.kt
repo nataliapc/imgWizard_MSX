@@ -1,19 +1,22 @@
 package org.nataliapc.imagewizard.resourcefiles
 
-class ResElementByteArray(private val name: String, private val content: ByteArray): ResElement
+import org.nataliapc.imagewizard.compressor.Compressor
+import org.nataliapc.imagewizard.resourcefiles.interfaces.ResElement
+
+class ResElementByteArray(
+    private val resIndex: ResFileImpl.IndexResource,
+    private val compressedContent: ByteArray
+): ResElement
 {
-    override fun getName(): String
-    {
-        return name
-    }
+    override fun getName(): String = resIndex.filename
 
-    override fun getContent(): ByteArray
-    {
-        return content
-    }
+    override fun getContent(): ByteArray = compressedContent
 
-    override fun getSize(): Int
-    {
-        return content.size
-    }
+    override fun getSize(): Int = resIndex.rawSize
+
+    override fun getCompressedSize(): Int = resIndex.compressedSize
+
+    override fun getCompressor(): Compressor = resIndex.compressor
+
+    override fun getCRC(): Long = resIndex.crc32
 }

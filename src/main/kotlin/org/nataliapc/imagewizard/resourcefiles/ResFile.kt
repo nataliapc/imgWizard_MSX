@@ -1,5 +1,7 @@
 package org.nataliapc.imagewizard.resourcefiles
 
+import org.nataliapc.imagewizard.resourcefiles.interfaces.ResElement
+
 
 interface ResFile
 {

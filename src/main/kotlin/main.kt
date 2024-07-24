@@ -1,6 +1,4 @@
-import org.nataliapc.imagewizard.swing.ViewFrame
 import org.nataliapc.imagewizard.compressor.Compressor
-import org.nataliapc.imagewizard.compressor.Compressor.Companion.MAX_SIZE_UNCOMPRESSED
 import org.nataliapc.imagewizard.compressor.Raw
 import org.nataliapc.imagewizard.compressor.Rle
 import org.nataliapc.imagewizard.image.ImgXFactory
@@ -11,27 +9,27 @@ import org.nataliapc.imagewizard.makichan.MakiImgV2Render
 import org.nataliapc.imagewizard.makichan.MakiImgV2Repository
 import org.nataliapc.imagewizard.resourcefiles.ResElementFile
 import org.nataliapc.imagewizard.resourcefiles.ResFileImpl
-import org.nataliapc.imagewizard.resourcefiles.ResRepository
+import org.nataliapc.imagewizard.resourcefiles.ResFileRepository
 import org.nataliapc.imagewizard.screens.PaletteMSX
 import org.nataliapc.imagewizard.screens.ScreenBitmap
 import org.nataliapc.imagewizard.screens.ScreenBitmapImpl
 import org.nataliapc.imagewizard.screens.enums.*
 import org.nataliapc.imagewizard.screens.imagewrapper.ImageWrapperImpl
 import org.nataliapc.imagewizard.screens.interfaces.ScreenPaletted
+import org.nataliapc.imagewizard.swing.ViewFrame
 import org.nataliapc.utils.nibbleLow
+import java.awt.image.BufferedImage
 import java.io.File
 import java.io.FileInputStream
-import java.lang.RuntimeException
-import javax.imageio.ImageIO
-import kotlin.math.absoluteValue
-import kotlin.system.exitProcess
-import java.awt.image.BufferedImage
 import java.lang.Integer.min
+import javax.imageio.ImageIO
 import kotlin.experimental.and
 import kotlin.experimental.or
+import kotlin.math.absoluteValue
+import kotlin.system.exitProcess
 
 
-const val version = "1.4.00"
+const val version = "1.4.4"
 const val appname = "imgWizard"
 const val verbose = true
 
@@ -55,6 +53,7 @@ fun main(args: Array<String>)
                 "ca" -> cmdCA_TransformSC12toSC10(args)
                 "v" -> cmdV_ViewImageIMx(args)
                 "res" -> cmdRES_CreateResourceFile(args)
+                "resadd" -> cmdRESADD_AddToResourceFile(args)
                 else -> showHelp()
             }
             if (verbose) {
@@ -77,14 +76,16 @@ private fun cmdL_ListContent(args: Array<String>)
 {
     val fileIn = getFile(args[1])
 
-    if (fileIn.extension == "res") {
-        ResRepository().from(fileIn)
-            .printInfo()
-        return
+    when (fileIn.extension) {
+        "res" -> {
+            ResFileRepository().from(fileIn)
+                .printInfo()
+        }
+        else -> {
+            ImgXRepository().from(fileIn)
+                .printInfo()
+        }
     }
-
-    ImgXRepository().from(fileIn)
-        .printInfo()
 }
 
 // c[l] <fileIn.SC?> <lines> [compressor | transparent_color]
@@ -119,7 +120,11 @@ fun cmdCL_CreateImageIMx(args: Array<String>)
     imgx.add(DaadClearWindow())
     imgx.header = screenMSX.extension.magicHeader
 
-    val dataChunks = splitDataInChunks(screenMSX.getRectangle(0, 0, screenMSX.width, lines), screenMSX.pixelType.bytesPack, compressor, ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE)
+    val dataChunks = splitDataInChunks(
+        screenMSX.getRectangle(0, 0, screenMSX.width, lines),
+        screenMSX.pixelType.bytesPack,
+        compressor,
+        ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE)
     dataChunks.forEach {
         if (it.size == ScreenBitmapChunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(ScreenBitmapChunk(it, Raw()))
@@ -169,7 +174,11 @@ fun cmdGS_V9990ImageFromRectangle(args: Array<String>)
     infoChunk.paletteType = paletteType
     infoChunk.chipset = Chipset.V9990
 
-    val dataChunks = splitDataInChunks(image.getRectangle(sx, sy, nx, ny), pixelType.bytesPack, compressor, Chunk.CHUNK_DATA_SIZE_THREESHOLD)
+    val dataChunks = splitDataInChunks(
+        image.getRectangle(sx, sy, nx, ny),
+        pixelType.bytesPack, compressor,
+        Chunk.CHUNK_DATA_SIZE_THREESHOLD,
+        V9990CmdDataChunk.MAX_UNCOMPRESSED_SIZE)
     dataChunks.forEach {
         if (it.size == Chunk.MAX_CHUNK_DATA_SIZE) {
             imgx.add(V9990CmdDataChunk(it, Raw()))
@@ -366,15 +375,42 @@ fun cmdRES_CreateResourceFile(args: Array<String>)
 
     val compressor = Compressor.Types.valueOf(args[cmdIdx++].uppercase()).instance
 
-    val resFile = ResFileImpl(compressor)
+    val resFile = ResFileImpl()
     while (cmdIdx < args.size) {
-        val resItem = ResElementFile(File(args[cmdIdx++]))
-        println("    Adding '${resItem.getName()}'")
+        val resItem = ResElementFile(File(args[cmdIdx++]), compressor)
         resFile.addResource(resItem)
     }
 
     println("### Saving Resources file ${fileOut.name}")
-    ResRepository().save(resFile, fileOut)
+    ResFileRepository().save(resFile, fileOut)
+    println("### Saving Include file ${fileInc.name}")
+    fileInc.writeText(resFile.generateInclude())
+}
+
+fun cmdRESADD_AddToResourceFile(args: Array<String>) {
+    var cmdIdx = 0
+    val cmd = args[cmdIdx++].lowercase()
+
+    if (args.size < 3) {
+        throw ArgumentException(cmd)
+    }
+    val fileRes = File(args[cmdIdx++])
+    val fileInc = File((fileRes.parentFile?.absolutePath ?: ".") + File.separator + fileRes.nameWithoutExtension + "_res.h")
+
+    val compressor = Compressor.Types.valueOf(args[cmdIdx++].uppercase()).instance
+
+    val resFile = if (fileRes.exists()) {
+        ResFileRepository().from(fileRes)
+    } else {
+        ResFileImpl()
+    }
+    while (cmdIdx < args.size) {
+        val resItem = ResElementFile(File(args[cmdIdx++]), compressor)
+        resFile.addResource(resItem)
+    }
+
+    println("### Saving Resources file ${fileRes.name}")
+    ResFileRepository().save(resFile, fileRes)
     println("### Saving Include file ${fileInc.name}")
     fileInc.writeText(resFile.generateInclude())
 }
@@ -402,9 +438,13 @@ private fun checkNumericArg(value: String): Int
     }
 }
 
-private fun splitDataInChunks(dataIn: ByteArray, bytesPack: Int, compressor: Compressor, maxChunkDataSize: Int): List<ByteArray>
+private fun splitDataInChunks(
+    dataIn: ByteArray,
+    bytesPack: Int,
+    compressor: Compressor,
+    maxChunkDataSize: Int,
+    maxUncompressedSize: Int = Compressor.MAX_SIZE_UNCOMPRESSED): List<ByteArray>
 {
-    val maxSize = MAX_SIZE_UNCOMPRESSED
     val out = arrayListOf<ByteArray>()
     var start = 0
     var end: Int
@@ -420,7 +460,7 @@ private fun splitDataInChunks(dataIn: ByteArray, bytesPack: Int, compressor: Com
         } else {
             // Search a near and easy entry point
             do {
-                if (end-start >= maxSize) { end = start + maxSize ; break }
+                if (end-start >= maxUncompressedSize) { end = start + maxUncompressedSize ; break }
                 dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
                 dataCompressedSize = dataCompressed.size
                 if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
@@ -433,15 +473,15 @@ private fun splitDataInChunks(dataIn: ByteArray, bytesPack: Int, compressor: Com
             } while (true)
         }
         // old entry point: end = dataIn.size
-        if (end-start > maxSize) {
-            end = start + maxSize
+        if (end-start > maxUncompressedSize) {
+            end = start + maxUncompressedSize
         }
         lastEnd = start
         do {
             dataCompressed = compressor.compress(dataIn.copyOfRange(start, end))
             dataCompressedSize = dataCompressed.size
             if (verbose) printCompressionProgress(end, dataIn.size, end-start, dataCompressedSize)
-            if (end-start == maxSize && dataCompressedSize <= maxChunkDataSize) break
+            if (end-start == maxUncompressedSize && dataCompressedSize <= maxChunkDataSize) break
             if ((lastEnd-end).absoluteValue <= 1 && dataCompressedSize > maxChunkDataSize) {
                 end -= bytesPack
                 lastEnd = end
@@ -496,16 +536,17 @@ private val commandLineOptions = hashMapOf<String, String>(
     "j" to "$appname j <fileOut.IM?> <fileIn1.IM?> [fileIn2.IM?] [fileIn3] ...",
     "5a" to "$appname 5a <fileIn.SC5> <fileOut.SCA> [lines]",
     "ca" to "$appname ca <fileIn.SCC> <fileOut.SCA> [lines]",
-    "res" to "$appname res <fileOut.RES> [compressor] <resFile1> <resFile2> ..."
+    "res" to "$appname res <fileOut.RES> [compressor] <resFile1> <resFile2> ...",
+    "resadd" to "$appname resadd <fileOut.RES> [compressor] <resFile1> <resFile2> ..."
 )
 
 private fun showHelp(exit: Boolean = true)
 {
     println("\n"+
-            "IMGWIZARD v$version for MSX2DAAD\n"+
+            "IMGWIZARD v$version for MSX/MSX2DAAD\n"+
             "===================================================================\n"+
             "A tool to create and manage MSX image files in several screen modes\n"+
-            "to be used by MSX2DAAD engine.\n"+
+            "to be used for MSX RESources and MSX2DAAD engine.\n"+
             "\n"+
             "L) List image chunks:\n"+
             "    ${commandLineOptions["l"]}\n"+
@@ -539,6 +580,9 @@ private fun showHelp(exit: Boolean = true)
             "\n"+
             "RES) Create a RESource file and an Include file from resource files:\n"+
             "    ${commandLineOptions["res"]}\n"+
+            "\n"+
+            "RESADD) Add to a RESource file and an Include file from resource files:\n"+
+            "    ${commandLineOptions["resadd"]}\n"+
             "\n"+
             " <fileIn>      Input file in format SCx (SC5/SC6/SC7/SC8/SCA/SCC)\n"+
             "               Palette can be inside SCx file or PL5 PL6 PL7 files.\n"+
